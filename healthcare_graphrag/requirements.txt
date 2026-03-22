@@ -1,0 +1,28 @@
+# Core
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# OpenAI
+openai==1.57.2
+
+# Neo4j
+neo4j==5.27.0
+
+# ChromaDB
+chromadb==0.6.3
+
+# Document loaders
+pypdf==5.1.0
+python-docx==1.1.2
+beautifulsoup4==4.12.3
+
+# NLP / entity normalization
+rapidfuzz==3.10.1
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.28.1
+tenacity==9.0.0
+structlog==24.4.0

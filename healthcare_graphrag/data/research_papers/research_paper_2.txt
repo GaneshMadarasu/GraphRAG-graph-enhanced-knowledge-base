@@ -1,0 +1,75 @@
+BRCA1 and BRCA2 Mutations in Triple-Negative Breast Cancer: Treatment Implications
+
+Authors: Dr. Lisa Park, Dr. Ahmed Hassan, Dr. Jennifer Moore
+Journal: Nature Medicine
+DOI: 10.1038/nm.2024.0892
+Date: 2024-01-20
+
+Abstract
+Triple-negative breast cancer (TNBC) accounts for 15-20% of all breast cancer diagnoses
+and is associated with poor prognosis. This study examined BRCA1 and BRCA2 gene mutations
+in 534 TNBC patients and their response to platinum-based chemotherapy.
+
+Introduction
+Breast cancer (ICD-10: C50) remains the most prevalent cancer in women worldwide.
+Triple-negative breast cancer (TNBC) lacks estrogen receptor (ER), progesterone receptor
+(PR), and HER2 (ERBB2) expression, limiting targeted therapy options.
+
+BRCA1 (Breast Cancer Gene 1) and BRCA2 (Breast Cancer Gene 2) are tumor suppressor genes
+located on chromosomes 17 and 13 respectively. BRCA1 and BRCA2 encode proteins critical
+for homologous recombination DNA repair. Germline mutations in BRCA1 or BRCA2 confer
+lifetime breast cancer risk of 65-80%.
+
+Drug Treatments and Interactions
+Tamoxifen (Nolvadex) is a selective estrogen receptor modulator (SERM) used for
+hormone receptor-positive breast cancer. For TNBC, tamoxifen is generally not indicated
+due to absent ER expression. However, in borderline cases, tamoxifen may be considered
+alongside chemotherapy.
+
+CRITICAL DRUG INTERACTION: Tamoxifen and doxorubicin (adriamycin) combination:
+Concurrent administration of tamoxifen and anthracyclines such as doxorubicin has been
+associated with increased cardiotoxicity risk. Cardiac monitoring is mandatory in
+patients receiving this combination. Evidence from our trial confirms a 2.3-fold
+increased risk of cardiomyopathy.
+
+Doxorubicin (adriamycin) side effects include:
+- Cardiotoxicity (cumulative dose-dependent)
+- Myelosuppression
+- Alopecia
+- Nausea and vomiting
+
+Chemotherapy Regimens for BRCA-mutated TNBC
+Platinum-based agents (cisplatin, carboplatin) demonstrate superior response rates in
+BRCA1/BRCA2-mutated TNBC compared to non-mutated tumors. Response rate: 68% vs 33%.
+
+PARP inhibitors (olaparib, niraparib) are FDA-approved for BRCA-mutated breast cancer.
+Olaparib is contraindicated in patients with severe renal impairment.
+
+Clinical Trial NCT04523456
+Phase III, randomized controlled trial
+Status: Active
+Start date: 2022-06-01
+End date: 2025-12-31
+Treatment: Olaparib + pembrolizumab vs standard chemotherapy in BRCA1/2-mutated TNBC
+Institution: Memorial Cancer Research Center
+
+Comorbidities and Breast Cancer
+Patients with Type 2 Diabetes Mellitus (T2DM) who develop breast cancer face additional
+challenges. Metformin use in T2DM patients with breast cancer has shown potential
+anti-proliferative effects via the AMPK pathway, creating an interesting mechanistic
+link between AMPK, BRCA1, and breast cancer pathogenesis.
+
+Obesity (ICD-10: E66) is a significant risk factor for breast cancer recurrence and is
+associated with worse outcomes in TNBC patients.
+
+Gene-Disease Associations Summary
+- BRCA1 → ASSOCIATED_WITH → Breast Cancer (ICD-10: C50)
+- BRCA2 → ASSOCIATED_WITH → Breast Cancer (ICD-10: C50)
+- BRCA1 → ASSOCIATED_WITH → Ovarian Cancer (ICD-10: C56)
+- ERBB2 → ASSOCIATED_WITH → Breast Cancer (ICD-10: C50)
+- AMPK → ASSOCIATED_WITH → Type 2 Diabetes Mellitus
+
+Conclusion
+BRCA1/2 mutation testing should be standard in all TNBC patients to guide therapy
+selection. The tamoxifen-doxorubicin interaction requires careful cardiac monitoring.
+PARP inhibitors represent a significant advance in BRCA-mutated TNBC treatment.

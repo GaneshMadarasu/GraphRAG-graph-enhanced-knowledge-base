@@ -1,0 +1,68 @@
+FDA Warns About New Ozempic Drug Interactions — What Patients Need to Know
+
+Source: MedHealth News
+Publication: MedHealth Daily
+Date: 2024-02-28
+Journalist: Rebecca Sullivan, Health Correspondent
+
+WASHINGTON — The Food and Drug Administration (FDA) issued a safety communication
+this week warning healthcare providers about potential drug interactions with
+semaglutide (Ozempic, Wegovy, Rybelsus), the blockbuster GLP-1 receptor agonist
+used for Type 2 Diabetes management and weight loss.
+
+The FDA alert specifically highlights:
+
+INSULIN INTERACTION WARNING
+Concurrent use of semaglutide (Ozempic) with insulin or insulin secretagogues
+such as sulfonylureas significantly increases the risk of hypoglycemia.
+Patients combining Ozempic with insulin may require insulin dose reduction.
+The FDA recommends close blood glucose monitoring when initiating semaglutide
+alongside existing insulin therapy.
+
+Type 2 Diabetes (T2DM) is a chronic metabolic disease affecting approximately
+38 million Americans. Semaglutide has emerged as a preferred treatment for T2DM
+due to its cardiovascular benefits and significant weight loss effects (average
+15% body weight reduction in the SUSTAIN trials).
+
+PANCREATITIS RISK
+The FDA has received reports of acute pancreatitis in patients taking semaglutide.
+Patients with a history of pancreatitis should not use Ozempic or any GLP-1 receptor
+agonist. Pancreatitis (ICD-10: K85) symptoms include severe abdominal pain radiating
+to the back, nausea, and vomiting.
+
+THYROID CANCER CONCERN
+Animal studies have shown an association between semaglutide and thyroid C-cell
+tumors. Semaglutide is contraindicated in patients with a personal or family history
+of medullary thyroid carcinoma (MTC) or Multiple Endocrine Neoplasia type 2 (MEN2).
+
+METFORMIN COMBINATION THERAPY
+Ozempic is commonly prescribed alongside metformin for T2DM. The FDA notes that
+this combination is generally safe and additive in glycemic control. However,
+monitoring for gastrointestinal side effects (nausea, vomiting, diarrhea) is
+important as both drugs share GI adverse effects.
+
+WEIGHT MANAGEMENT AND CARDIOVASCULAR OUTCOMES
+The SUSTAIN-6 trial demonstrated that semaglutide reduced major adverse cardiovascular
+events (MACE) by 26% in high-risk T2DM patients. This makes semaglutide particularly
+valuable for T2DM patients with established cardiovascular disease.
+
+Regarding cardiovascular safety: semaglutide does not interact negatively with
+commonly used cardiovascular drugs (statins, beta-blockers, ACE inhibitors).
+
+PATIENT GUIDANCE
+"Patients should not stop semaglutide without consulting their physician," said
+Dr. Michael Torres, endocrinologist at Metro General Hospital. "The benefits for
+T2DM management are well-established, but the drug interactions must be carefully
+managed, particularly in elderly diabetic patients over 65."
+
+The FDA reminder comes amid a surge in semaglutide prescriptions, which have
+increased 400% since 2021. Ozempic (semaglutide) has largely displaced older
+GLP-1 agents like liraglutide (Victoza) in clinical practice due to superior
+efficacy data.
+
+For patients currently on metformin monotherapy being transitioned to combination
+therapy with Ozempic, endocrinologists recommend a gradual titration approach
+starting at 0.25mg weekly.
+
+Note: This article is for informational purposes only and does not constitute
+medical advice. Patients should consult their healthcare provider.

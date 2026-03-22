@@ -1,0 +1,78 @@
+INTERNAL REPORT — CONFIDENTIAL
+Metro General Hospital — Cardiology Department
+Q3 2024 Readmission Analysis Report
+
+Department: Cardiology
+Date: 2024-10-01
+Report ID: MGH-CARD-Q3-2024
+Patient Cohort: Anonymized — Adult inpatients admitted for heart failure (ICD-10: I50)
+Period: July 1, 2024 – September 30, 2024
+
+Executive Summary
+This report analyzes 30-day readmission rates for heart failure patients discharged
+from the Cardiology Department during Q3 2024. A total of 342 patients were included
+in this analysis. The 30-day readmission rate was 22.8%, exceeding the national
+benchmark of 19.9%.
+
+Patient Demographics (Anonymized)
+- Age group: 65-85 years (median age: 74)
+- Gender: 54% male, 46% female
+- Comorbidities: Type 2 Diabetes Mellitus (T2DM): 61%, Hypertension: 78%,
+  Chronic Kidney Disease: 43%, Atrial Fibrillation: 38%
+
+Drug Therapy Analysis
+Heart failure patients in this cohort were predominantly on the following medications:
+
+1. Furosemide (Lasix): 89% of patients
+   - Furosemide is the primary loop diuretic for heart failure management
+   - Side effects documented in cohort: electrolyte imbalances (hypokalemia) in 31%
+
+2. Spironolactone (Aldactone): 64% of patients
+   CRITICAL DRUG INTERACTION IDENTIFIED:
+   Furosemide + Spironolactone combination: While commonly co-prescribed for heart
+   failure (complementary mechanisms — loop diuretic vs aldosterone antagonist),
+   this combination requires close electrolyte monitoring. In our cohort, 8 patients
+   (2.3%) developed hyperkalemia requiring intervention, particularly those with
+   concurrent CKD. Risk is highest in elderly patients with reduced renal clearance.
+
+3. Metformin (Glucophage) in T2DM Patients:
+   Of the 61% of patients with T2DM, 78% were on metformin prior to admission.
+   IMPORTANT: Metformin was withheld in 34% of heart failure admissions due to
+   concerns about lactic acidosis risk in acute decompensated heart failure.
+   This finding aligns with published literature (see research papers on metformin
+   contraindications in heart failure).
+
+4. Carvedilol: 71% of patients
+5. Lisinopril: 58% of patients
+
+Readmission Risk Factors Identified
+High-risk factors for 30-day readmission in our cohort:
+1. BNP > 500 pg/mL at discharge: OR 3.2 (p < 0.001)
+2. T2DM + Heart Failure comorbidity: OR 2.1 (p < 0.01)
+3. Polypharmacy (≥8 medications): OR 1.8 (p < 0.05)
+4. Non-adherence to furosemide: OR 2.7 (p < 0.001)
+
+Drug Interactions Flagged by Pharmacy Review
+The following drug interactions were flagged by our pharmacy team:
+- Furosemide + NSAIDs (ibuprofen/aspirin): Reduced diuretic efficacy, risk of
+  acute kidney injury — 12 cases identified
+- Spironolactone + ACE inhibitors (lisinopril): Hyperkalemia risk — 19 cases
+- Metformin + contrast media: 7 patients required emergency metformin withholding
+  pre-procedure (consistent with published contraindication guidelines)
+
+Type 2 Diabetes and Heart Failure Comorbidity
+T2DM and Heart Failure are strongly comorbid conditions. In our cohort, T2DM
+was present in 61% of heart failure patients, significantly higher than the
+general population prevalence of 10.5%. The interplay between insulin resistance,
+hyperglycemia, and cardiac function creates a vicious cycle of worsening outcomes.
+Cardiovascular disease remains the leading cause of death in T2DM patients.
+
+Recommendations
+1. Implement structured medication reconciliation for high-risk discharge patients
+2. Establish electrolyte monitoring protocol for furosemide + spironolactone users
+3. Create clear metformin hold/restart protocol for heart failure admissions
+4. Enhance T2DM management protocols within cardiology inpatient service
+5. Develop targeted readmission prevention program for T2DM + heart failure patients
+
+Department: Cardiology | Prepared by: Quality Improvement Team
+Distribution: Department Heads, CMO, Pharmacy Committee

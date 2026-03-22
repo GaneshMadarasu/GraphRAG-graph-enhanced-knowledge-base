@@ -1,0 +1,97 @@
+FROM: Dr. Sarah Mitchell (Attending Cardiologist, Metro General Hospital)
+TO: Dr. James Patterson (Clinical Pharmacist)
+CC: Dr. Linda Zhao (Hematology)
+DATE: 2024-11-15
+SUBJECT: Urgent — Patient on Warfarin + Aspirin Combination — Bleeding Risk
+
+Dr. Patterson,
+
+I need your urgent input on a patient situation that came up this morning.
+
+We have a 71-year-old patient admitted for atrial fibrillation (ICD-10: I48)
+management. The patient is currently on:
+- Warfarin 5mg daily (for stroke prevention in atrial fibrillation)
+- Aspirin (acetylsalicylic acid) 81mg daily (prescribed by their cardiologist
+  for concurrent coronary artery disease)
+
+DRUG INTERACTION CONCERN:
+As you know, warfarin + aspirin combination significantly increases bleeding risk.
+Aspirin inhibits platelet aggregation while warfarin inhibits clotting factor
+synthesis — combining these two creates a dual anticoagulation effect.
+
+The patient's INR this morning was 3.8 (therapeutic range for AF: 2.0-3.0).
+This elevated INR + concurrent aspirin use puts the patient at HIGH risk for
+major hemorrhage, particularly GI bleeding or intracranial hemorrhage.
+
+We need to decide: continue both, stop aspirin, or switch to a DOAC (direct
+oral anticoagulant like apixaban or rivaroxaban)?
+
+The literature suggests that the warfarin + aspirin combination is only justified
+when clear benefit outweighs risk (e.g., mechanical heart valves + AF). For this
+patient with AF + stable CAD, the WOEST trial data suggests aspirin can be safely
+discontinued.
+
+ADDITIONAL CONTEXT:
+- Patient also has Type 2 Diabetes (on metformin — acceptable with current renal function)
+- Hypertension (on lisinopril)
+- The metformin + warfarin combination: metformin can potentiate the anticoagulant
+  effect of warfarin in some patients by affecting gut flora and vitamin K metabolism.
+  Worth monitoring INR more closely.
+
+Please advise on:
+1. Recommended INR monitoring frequency
+2. Whether to continue aspirin or switch to antiplatelet-free anticoagulation
+3. Any adjustments needed to the warfarin dose
+
+Dr. Mitchell
+
+---
+
+REPLY FROM: Dr. James Patterson (Clinical Pharmacist)
+DATE: 2024-11-15
+
+Dr. Mitchell,
+
+Thank you for flagging this. This is a critical drug interaction that needs
+immediate attention.
+
+WARFARIN + ASPIRIN: HIGH BLEEDING RISK
+The combination of warfarin and aspirin (acetylsalicylic acid) is associated with
+a 3-fold increase in major bleeding events compared to warfarin alone. The INR of
+3.8 is concerning — this patient is supratherapeutic.
+
+My recommendations:
+1. HOLD aspirin immediately pending reassessment
+2. Do NOT hold warfarin without hematology input (Dr. Zhao's team)
+3. INR monitoring: daily until INR returns to 2.0-3.0 therapeutic range
+4. Consider warfarin dose reduction to 4mg daily
+
+METFORMIN INTERACTION NOTE:
+You raised a valid point about metformin + warfarin. The interaction is classified
+as moderate severity. Metformin does not directly inhibit warfarin metabolism
+(CYP2C9), but there are case reports of enhanced anticoagulant effect. Given
+this patient's T2DM and current INR situation, we should monitor INR after any
+metformin dose change.
+
+THREAD_ID: MGH-PHARM-2024-1145
+CASE_REFERENCE: AF-MANAGEMENT-ELDERLY-2024
+
+Also noting for the record: furosemide (if this patient is on it for any reason)
+can also potentiate warfarin effect through protein binding displacement.
+
+Kind regards,
+Dr. James Patterson
+Clinical Pharmacist, Metro General Hospital
+
+---
+
+SLACK MESSAGE - #clinical-alerts channel
+Dr. Linda Zhao [2024-11-15 14:23]:
+Confirming receipt. Reviewing warfarin + aspirin case. Standard protocol:
+atrial fibrillation patients with stable CAD should transition to warfarin
+monotherapy per WOEST and AUGUSTUS trial guidelines. Will consult with Dr. Mitchell.
+Bleeding risk outweighs benefit of dual therapy in this case.
+
+Also flagging: any patient on warfarin should be counseled to avoid NSAIDs
+(ibuprofen, naproxen) as these significantly elevate bleeding risk. Aspirin
+at 81mg is a gray area but the current supratherapeutic INR makes it untenable.

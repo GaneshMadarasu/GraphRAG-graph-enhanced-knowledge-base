@@ -1,0 +1,79 @@
+Metformin and Cardiovascular Outcomes in Type 2 Diabetes Patients Over 65
+
+Authors: Dr. Sarah Chen, Dr. James Okafor, Dr. Maria Rodriguez
+Journal: Journal of Clinical Endocrinology & Metabolism
+DOI: 10.1210/jc.2024.001234
+Date: 2024-03-15
+
+Abstract
+Metformin (glucophage) remains the first-line pharmacotherapy for Type 2 Diabetes
+Mellitus (T2DM). This prospective cohort study examined cardiovascular outcomes in
+1,847 patients aged 65 and older receiving metformin monotherapy over 5 years.
+
+Introduction
+Type 2 Diabetes Mellitus (T2DM, also known as Diabetes Mellitus Type 2) affects
+over 537 million adults worldwide. Metformin, chemically known as dimethylbiguanide,
+activates AMP-activated protein kinase (AMPK), which plays a central role in glucose
+homeostasis and energy regulation. AMPK activation by metformin reduces hepatic
+glucose production and improves insulin sensitivity.
+
+Methods
+Patients were enrolled from three tertiary care centers between January 2019 and
+December 2023. Inclusion criteria: age ≥ 65, confirmed T2DM diagnosis (ICD-10: E11),
+HbA1c between 7.0% and 10.0%. Exclusion criteria: eGFR < 30 mL/min (contraindication
+for metformin), pregnancy, or active liver disease.
+
+Drug Interactions
+A critical finding of this study involves metformin interactions with contrast media.
+Metformin must be withheld before iodinated contrast administration due to risk of
+contrast-induced nephropathy and subsequent lactic acidosis.
+
+Metformin and alcohol consumption: concurrent use increases lactic acidosis risk.
+Patients on metformin who are also prescribed cimetidine show elevated metformin
+plasma levels due to renal tubular secretion competition.
+
+In our diabetic cohort, 23% of patients were co-prescribed aspirin (acetylsalicylic
+acid) for cardiovascular protection. No direct pharmacokinetic interaction was
+identified, though both agents affect platelet function pathways.
+
+Patients receiving furosemide (a loop diuretic) concurrently with metformin showed
+a 12% increased risk of acute kidney injury, particularly in dehydrated states.
+
+Side Effects and Adverse Events
+The most common side effects of metformin in our cohort:
+- Gastrointestinal disturbances (nausea, diarrhea): 34% of patients
+- Vitamin B12 deficiency: 18% after 3+ years of use
+- Lactic acidosis: 0.03 cases per 1000 patient-years (rare but serious)
+
+Lactic acidosis risk was significantly elevated in patients with:
+- Chronic kidney disease (CKD, ICD-10: N18)
+- Heart failure (ICD-10: I50)
+- Liver disease
+
+AMPK Gene and Metformin Mechanism
+The AMPK gene (officially PRKAA1/PRKAA2) encodes the AMP-activated protein kinase
+catalytic subunit. Metformin's primary mechanism involves AMPK activation in hepatocytes,
+leading to inhibition of mTOR complex 1 and reduced gluconeogenesis. Polymorphisms in
+AMPK genes have been associated with variable metformin response in T2DM patients.
+
+Results
+In patients aged 65+, metformin monotherapy was associated with:
+- 19% reduction in major adverse cardiovascular events (MACE)
+- 11% reduction in all-cause mortality
+- Significant HbA1c reduction (mean: 1.2%)
+- No increased hypoglycemia vs placebo
+
+Cardiovascular disease (CVD) remained the leading cause of mortality in the T2DM
+cohort. Comorbid hypertension (ICD-10: I10) was present in 67% of patients.
+Obesity (ICD-10: E66) was identified in 54% of the study population.
+
+Conclusion
+Metformin remains safe and effective for elderly T2DM patients. Contraindications
+must be strictly observed, particularly in patients with CKD, heart failure, or
+planned contrast procedures. The AMPK pathway represents a promising target for
+next-generation T2DM therapeutics.
+
+References
+[1] UK Prospective Diabetes Study Group. NEJM. 1998.
+[2] Diabetes Prevention Program. NEJM. 2002.
+[3] EMPA-REG OUTCOME. NEJM. 2015.

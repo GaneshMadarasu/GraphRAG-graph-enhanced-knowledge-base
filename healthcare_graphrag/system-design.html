@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Healthcare GraphRAG — System Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --blue: #3b82f6;
+    --blue-light: #eff6ff;
+    --green: #10b981;
+    --green-light: #ecfdf5;
+    --purple: #8b5cf6;
+    --purple-light: #f5f3ff;
+    --orange: #f59e0b;
+    --orange-light: #fffbeb;
+    --red: #ef4444;
+    --red-light: #fef2f2;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  nav ul {
+    display: flex;
+    list-style: none;
+    gap: 0;
+    overflow-x: auto;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  nav a {
+    display: block;
+    padding: .75rem 1rem;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+  }
+  nav a:hover { color: var(--blue); border-color: var(--blue); }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1e40af 100%);
+    color: white;
+    padding: 4rem 2rem 3.5rem;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.6rem; font-weight: 800; letter-spacing: -1px; margin-bottom: .5rem; }
+  .hero .tagline { font-size: 1.15rem; color: #93c5fd; margin-bottom: 1.8rem; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .badges { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+  .badge {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #e0f2fe;
+    padding: .3rem .8rem;
+    border-radius: 9999px;
+    font-size: .78rem;
+    font-weight: 500;
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+  section { padding: 3.5rem 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: .35rem;
+    color: var(--text);
+  }
+  .section-label {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--blue);
+    margin-bottom: .4rem;
+  }
+  .section-intro { color: var(--muted); margin-bottom: 2rem; max-width: 680px; }
+
+  /* ── OVERVIEW ── */
+  .eli15-grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .eli15-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--blue);
+  }
+  .eli15-card .emoji { font-size: 1.8rem; margin-bottom: .6rem; display: block; }
+  .eli15-card p { color: var(--muted); font-size: .93rem; }
+
+  /* ── DIAGRAM ── */
+  .diagram-wrap {
+    background: #0f172a;
+    border-radius: 18px;
+    padding: 2.5rem 2rem;
+    overflow-x: auto;
+  }
+
+  .diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 700px;
+  }
+
+  .d-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    width: 100%;
+  }
+
+  .d-box {
+    border-radius: 12px;
+    padding: .9rem 1.2rem;
+    text-align: center;
+    min-width: 130px;
+    max-width: 170px;
+    flex: 1;
+  }
+  .d-box.blue   { background: #1d4ed8; border: 1.5px solid #3b82f6; }
+  .d-box.green  { background: #065f46; border: 1.5px solid #10b981; }
+  .d-box.purple { background: #4c1d95; border: 1.5px solid #8b5cf6; }
+  .d-box.orange { background: #92400e; border: 1.5px solid #f59e0b; }
+  .d-box.gray   { background: #1e293b; border: 1.5px solid #475569; }
+
+  .d-box .box-name { font-size: .82rem; font-weight: 700; color: #fff; margin-bottom: .25rem; }
+  .d-box .box-desc { font-size: .68rem; color: rgba(255,255,255,.65); line-height: 1.4; }
+
+  .d-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .15rem;
+  }
+  .d-arrow .arr-label { font-size: .62rem; color: #94a3b8; white-space: nowrap; }
+  .d-arrow .arr-line {
+    width: 2px;
+    height: 28px;
+    background: #334155;
+    position: relative;
+  }
+  .d-arrow .arr-line::after {
+    content: '▼';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #475569;
+    font-size: .7rem;
+  }
+
+  .d-harrow {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+  }
+  .d-harrow .h-line {
+    height: 2px;
+    width: 32px;
+    background: #334155;
+    position: relative;
+  }
+  .d-harrow .h-line::after {
+    content: '▶';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #475569;
+    font-size: .65rem;
+  }
+  .d-harrow .h-label { font-size: .62rem; color: #94a3b8; white-space: nowrap; }
+
+  .d-group {
+    border: 1px solid #1e3a5f;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    width: 100%;
+    margin-top: .5rem;
+  }
+  .d-group-label {
+    font-size: .62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #475569;
+    margin-bottom: .8rem;
+    text-align: left;
+  }
+
+  /* ── DATA FLOW ── */
+  .flow-steps { display: flex; flex-direction: column; gap: 1rem; }
+  .flow-step {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 1.2rem;
+    align-items: flex-start;
+  }
+  .flow-step .step-num {
+    background: var(--blue);
+    color: white;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .85rem;
+    flex-shrink: 0;
+  }
+  .flow-step.warning .step-num { background: var(--red); }
+  .flow-step h4 { font-size: .95rem; font-weight: 600; margin-bottom: .2rem; }
+  .flow-step p { color: var(--muted); font-size: .88rem; }
+
+  /* ── COMPONENT CARDS ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 1.25rem;
+  }
+  .comp-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: var(--shadow);
+    border-top: 3px solid var(--blue);
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+  }
+  .comp-card.c-green  { border-color: var(--green); }
+  .comp-card.c-purple { border-color: var(--purple); }
+  .comp-card.c-orange { border-color: var(--orange); }
+  .comp-card.c-gray   { border-color: #94a3b8; }
+
+  .comp-name { font-weight: 700; font-size: 1rem; }
+  .comp-job  { color: var(--muted); font-size: .88rem; }
+  .comp-analogy {
+    background: var(--blue-light);
+    border-radius: 8px;
+    padding: .5rem .7rem;
+    font-size: .82rem;
+    color: #1d4ed8;
+  }
+  .comp-card.c-green  .comp-analogy { background: var(--green-light); color: #065f46; }
+  .comp-card.c-purple .comp-analogy { background: var(--purple-light); color: #4c1d95; }
+  .comp-card.c-orange .comp-analogy { background: var(--orange-light); color: #92400e; }
+  .comp-card.c-gray   .comp-analogy { background: #f1f5f9; color: #334155; }
+
+  .comp-tech { font-size: .78rem; color: var(--muted); }
+  .io-row { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .io-chip {
+    background: #f1f5f9;
+    border-radius: 6px;
+    padding: .2rem .55rem;
+    font-size: .73rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .io-chip.in  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .io-chip.out { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+
+  /* ── STORAGE ── */
+  .storage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media (max-width: 600px) { .storage-grid { grid-template-columns: 1fr; } }
+  .storage-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .storage-card.purple { border-left: 4px solid var(--purple); }
+  .storage-card.green  { border-left: 4px solid var(--green); }
+  .storage-name { font-weight: 700; font-size: 1.05rem; margin-bottom: .3rem; }
+  .storage-tagline { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; }
+  .storage-items { display: flex; flex-direction: column; gap: .5rem; }
+  .storage-item {
+    display: flex;
+    gap: .6rem;
+    align-items: flex-start;
+    font-size: .85rem;
+  }
+  .storage-item .si-what { font-weight: 600; min-width: 120px; }
+  .storage-item .si-why  { color: var(--muted); }
+
+  /* ── DECISIONS ── */
+  .decisions { display: flex; flex-direction: column; gap: 1rem; }
+  .decision {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .decision .d-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: .1rem;
+  }
+  .decision h4 { font-size: .95rem; font-weight: 600; margin-bottom: .25rem; }
+  .decision p  { color: var(--muted); font-size: .87rem; }
+  .decision strong { color: var(--text); }
+
+  /* ── CREDIBILITY ── */
+  .cred-table { width: 100%; border-collapse: collapse; }
+  .cred-table th {
+    background: #f1f5f9;
+    padding: .6rem 1rem;
+    text-align: left;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .cred-table td {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: .88rem;
+  }
+  .cred-bar-wrap { background: #f1f5f9; border-radius: 99px; height: 8px; width: 120px; overflow: hidden; }
+  .cred-bar { height: 100%; border-radius: 99px; background: var(--blue); }
+
+  /* ── GLOSSARY ── */
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .gloss-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    box-shadow: var(--shadow);
+  }
+  .gloss-term { font-weight: 700; font-size: .92rem; margin-bottom: .3rem; color: var(--blue); }
+  .gloss-def  { color: var(--muted); font-size: .85rem; }
+
+  /* ── TABLE shared ── */
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+  th { background: #f1f5f9; padding: .65rem 1rem; text-align: left; font-size: .8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  td { padding: .8rem 1rem; border-bottom: 1px solid var(--border); font-size: .88rem; }
+  tr:last-child td { border: none; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #0f172a;
+    color: #94a3b8;
+    text-align: center;
+    padding: 2rem;
+    font-size: .82rem;
+  }
+  footer strong { color: #e2e8f0; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.9rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <ul>
+    <li><a href="#what">What is this?</a></li>
+    <li><a href="#diagram">Big Picture</a></li>
+    <li><a href="#flow">Data Flow</a></li>
+    <li><a href="#pieces">Components</a></li>
+    <li><a href="#storage">Storage</a></li>
+    <li><a href="#decisions">Design Decisions</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <h1>🏥 Healthcare GraphRAG</h1>
+  <p class="tagline">An AI system that reads thousands of medical documents and answers complex research questions by connecting facts across all of them</p>
+  <div class="badges">
+    <span class="badge">Python 3.11</span>
+    <span class="badge">FastAPI</span>
+    <span class="badge">Neo4j 5.x</span>
+    <span class="badge">ChromaDB</span>
+    <span class="badge">GPT-4o</span>
+    <span class="badge">text-embedding-3-small</span>
+    <span class="badge">Pydantic v2</span>
+    <span class="badge">Docker</span>
+  </div>
+</header>
+
+<!-- ── SECTION A: OVERVIEW ── -->
+<section id="what">
+  <div class="container">
+    <p class="section-label">What is this?</p>
+    <h2>Plain English Overview</h2>
+    <p class="section-intro">No jargon. Just plain English.</p>
+
+    <div class="eli15-grid">
+      <div class="eli15-card">
+        <span class="emoji">🔍</span>
+        <h3 style="margin-bottom:.4rem;font-size:1rem">Think of it like a super-smart librarian</h3>
+        <p>Imagine a librarian who has personally read every medical research paper, every internal hospital report, every news article, and every doctor's email in the building. When you ask a question, she doesn't just look up one book — she connects clues across hundreds of documents to give you the full picture.</p>
+      </div>
+      <div class="eli15-card">
+        <span class="emoji">🕸️</span>
+        <h3 style="margin-bottom:.4rem;font-size:1rem">It builds a "mind map" of medicine</h3>
+        <p>As it reads each document, it extracts facts like "Metformin treats Type 2 Diabetes" and "Metformin interacts dangerously with Furosemide" and stores them as a giant connected web — like a mind map. When you ask a question, it walks along the web to find related facts you never would have found with regular search.</p>
+      </div>
+      <div class="eli15-card">
+        <span class="emoji">⚖️</span>
+        <h3 style="margin-bottom:.4rem;font-size:1rem">It knows who to trust more</h3>
+        <p>A fact from a peer-reviewed research paper gets a higher trust score (1.0) than a fact from an informal Slack message (0.4). When it shows you an answer, it tells you exactly where each fact came from and how confident it is — and <strong>always warns you about dangerous drug interactions</strong>, no matter what.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION B: DIAGRAM ── -->
+<section id="diagram">
+  <div class="container">
+    <p class="section-label">Architecture</p>
+    <h2>The Big Picture</h2>
+    <p class="section-intro">Every box is one major part of the system. Follow the arrows to see how data flows.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram">
+
+        <!-- User -->
+        <div class="d-row">
+          <div class="d-box blue" style="max-width:220px">
+            <div class="box-name">👩‍⚕️ Doctor / Researcher</div>
+            <div class="box-desc">Asks a question like "Which drugs interact with Metformin?"</div>
+          </div>
+        </div>
+
+        <div class="d-arrow">
+          <div class="arr-label">HTTP POST /query</div>
+          <div class="arr-line"></div>
+        </div>
+
+        <!-- API -->
+        <div class="d-row">
+          <div class="d-box blue" style="max-width:220px">
+            <div class="box-name">⚡ FastAPI Server</div>
+            <div class="box-desc">Receives questions & triggers ingestion. Runs on port 8000.</div>
+          </div>
+        </div>
+
+        <div class="d-arrow">
+          <div class="arr-label">calls both at once</div>
+          <div class="arr-line"></div>
+        </div>
+
+        <!-- Two retrievers side by side -->
+        <div class="d-group">
+          <div class="d-group-label">🔍 Retrieval Layer — Two searches happen in parallel</div>
+          <div class="d-row" style="gap:3rem">
+            <div class="d-box green">
+              <div class="box-name">🧮 Vector Retriever</div>
+              <div class="box-desc">Finds text that means the same thing semantically</div>
+            </div>
+            <div style="text-align:center;color:#475569;font-size:.65rem;padding-top:1.5rem">
+              ↕ merged &<br>scored
+            </div>
+            <div class="d-box green">
+              <div class="box-name">🕸️ Graph Retriever</div>
+              <div class="box-desc">Walks the knowledge graph — finds drug interactions, gene links</div>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:.8rem">
+            <div class="d-arrow" style="display:inline-flex">
+              <div class="arr-label">combined by Hybrid Retriever (0.4 × vector + 0.4 × graph + 0.2 × credibility)</div>
+              <div class="arr-line"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:.5rem"></div>
+
+        <!-- Storage -->
+        <div class="d-group">
+          <div class="d-group-label">💾 Storage Layer — Where knowledge lives</div>
+          <div class="d-row">
+            <div class="d-box purple">
+              <div class="box-name">🗃️ ChromaDB</div>
+              <div class="box-desc">Stores text chunks as number-lists for fast similarity search</div>
+            </div>
+            <div class="d-box purple">
+              <div class="box-name">🌐 Neo4j Graph DB</div>
+              <div class="box-desc">Stores drug → disease → gene connections as a web of linked facts</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-arrow">
+          <div class="arr-label">top results passed to</div>
+          <div class="arr-line"></div>
+        </div>
+
+        <!-- Answer Generator -->
+        <div class="d-row">
+          <div class="d-box orange" style="max-width:220px">
+            <div class="box-name">✍️ Answer Generator</div>
+            <div class="box-desc">Gives evidence + citations to GPT-4o to write the final answer</div>
+          </div>
+          <div class="d-harrow">
+            <div class="h-line"></div>
+            <div class="h-label">API call</div>
+          </div>
+          <div class="d-box orange">
+            <div class="box-name">🤖 OpenAI GPT-4o</div>
+            <div class="box-desc">Writes a human-readable answer. Never invents facts not in the evidence.</div>
+          </div>
+        </div>
+
+        <div class="d-arrow">
+          <div class="arr-label">answer + warnings + citations</div>
+          <div class="arr-line"></div>
+        </div>
+
+        <div class="d-row">
+          <div class="d-box blue" style="max-width:280px">
+            <div class="box-name">✅ You Get the Answer</div>
+            <div class="box-desc">With source citations, confidence %, ⚠️ drug warnings, and a safety disclaimer</div>
+          </div>
+        </div>
+
+        <!-- Ingestion note -->
+        <div class="d-group" style="margin-top:1.5rem;border-color:#065f46">
+          <div class="d-group-label" style="color:#10b981">📥 Ingestion Pipeline — Runs once to load all documents</div>
+          <div class="d-row" style="gap:.6rem;flex-wrap:wrap;justify-content:center">
+            <div class="d-box green" style="min-width:110px;max-width:130px">
+              <div class="box-name">📄 Doc Loader</div>
+              <div class="box-desc">PDF, DOCX, TXT, HTML, JSON</div>
+            </div>
+            <div style="color:#10b981;padding-top:1.2rem">→</div>
+            <div class="d-box green" style="min-width:110px;max-width:130px">
+              <div class="box-name">✂️ Chunker</div>
+              <div class="box-desc">Splits into 800-char pieces</div>
+            </div>
+            <div style="color:#10b981;padding-top:1.2rem">→</div>
+            <div class="d-box orange" style="min-width:110px;max-width:130px">
+              <div class="box-name">🧠 GPT-4o Extractor</div>
+              <div class="box-desc">Finds drugs, diseases, genes</div>
+            </div>
+            <div style="color:#10b981;padding-top:1.2rem">→</div>
+            <div class="d-box green" style="min-width:110px;max-width:130px">
+              <div class="box-name">🔤 Normalizer</div>
+              <div class="box-desc">Tylenol → acetaminophen</div>
+            </div>
+            <div style="color:#10b981;padding-top:1.2rem">→</div>
+            <div class="d-box purple" style="min-width:110px;max-width:130px">
+              <div class="box-name">💾 Graph Builder</div>
+              <div class="box-desc">Writes to Neo4j + ChromaDB</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION C: DATA FLOW ── -->
+<section id="flow">
+  <div class="container">
+    <p class="section-label">Step by Step</p>
+    <h2>What Happens When You Ask a Question?</h2>
+    <p class="section-intro">Like a comic book — one panel at a time.</p>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div>
+          <h4>📝 You type a question</h4>
+          <p>For example: <em>"Which drugs interact negatively with Metformin in diabetic patients over 65?"</em> — You send this to the API at <code style="background:#f1f5f9;padding:.1em .4em;border-radius:4px;font-size:.85em">POST /query</code>.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>🔎 The API spots the medical words</h4>
+          <p>The Hybrid Retriever scans your question and finds known medical entities — it detects <strong>metformin</strong> (a drug) and <strong>diabetes</strong> (a disease). These become the starting points for two simultaneous searches.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>🧮 Search #1 — Vector Search (finds similar text)</h4>
+          <p>ChromaDB converts your question into a list of numbers (a "vector embedding") and finds the 10 text chunks that have the most similar meaning — like Google, but only searching your private medical documents. Each result gets a <strong>similarity score</strong>.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div>
+          <h4>🕸️ Search #2 — Graph Search (follows connections)</h4>
+          <p>Neo4j walks along the knowledge graph starting from "Metformin" and follows its edges: <em>INTERACTS_WITH → Furosemide, CONTRAINDICATED_FOR → Heart Failure, CAUSES_SIDE_EFFECT → Lactic Acidosis</em>. Each hop (step away) gets a <strong>graph hop score</strong>.</p>
+        </div>
+      </div>
+      <div class="flow-step warning">
+        <div class="step-num" style="background:#f59e0b">⚠️</div>
+        <div>
+          <h4>⚠️ Drug interactions are always flagged — no matter what</h4>
+          <p>If any drug interaction is found in the graph, it is <strong>always</strong> included in the warnings list, even if the confidence score is low. Safety comes first.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <div>
+          <h4>⚖️ Scores are fused and ranked</h4>
+          <p>Every result gets a final score: <strong>0.4 × vector score + 0.4 × graph hop score + 0.2 × source credibility</strong>. A research paper gets credibility 1.0; a Slack message gets 0.4. Results are sorted from best to worst.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">6</div>
+        <div>
+          <h4>✍️ GPT-4o writes the answer from the evidence</h4>
+          <p>The top results are sent to GPT-4o with strict instructions: <em>only use facts from the evidence, always cite the source document, never invent drug dosages</em>. It writes a clear human-readable answer with inline citations like [Document: Research Paper 1].</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">7</div>
+        <div>
+          <h4>✅ You receive the full response</h4>
+          <p>The API returns: the answer, a confidence percentage (0–100%), the sources used, any drug interaction warnings, the list of graph entities that were queried, and a safety disclaimer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION D: COMPONENTS ── -->
+<section id="pieces">
+  <div class="container">
+    <p class="section-label">The Pieces</p>
+    <h2>Component Cards</h2>
+    <p class="section-intro">Every major module explained — what it does, why it exists, and what goes in and out.</p>
+
+    <div class="cards-grid">
+
+      <div class="comp-card">
+        <div class="comp-name">📄 Document Loader</div>
+        <div class="comp-job">Reads 4 types of documents and tags each one with its source type (research paper, internal report, news article, or email/Slack message)</div>
+        <div class="comp-analogy">💬 Like a postal worker who sorts letters by type — medical journals go in one pile, internal memos in another</div>
+        <div class="comp-tech">Tech: Python · pypdf · python-docx · BeautifulSoup4</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: PDF / DOCX / TXT / HTML / JSON</span>
+          <span class="io-chip out">OUT: LoadedDocument with metadata</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-green">
+        <div class="comp-name">✂️ Medical Chunker</div>
+        <div class="comp-job">Splits long documents into small 800-character pieces, always cutting at sentence boundaries so facts are never split mid-sentence</div>
+        <div class="comp-analogy">💬 Like tearing a book into individual paragraphs — but only along page breaks, never mid-sentence</div>
+        <div class="comp-tech">Tech: Python · regex · sentence boundary detection</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Full document text</span>
+          <span class="io-chip out">OUT: List of Chunk objects (800 chars each)</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-orange">
+        <div class="comp-name">🧠 Entity Extractor</div>
+        <div class="comp-job">Sends each chunk to GPT-4o and asks it to find all drugs, diseases, genes, and relationships mentioned — and return them as structured JSON</div>
+        <div class="comp-analogy">💬 Like a medical student reading a paragraph and circling every drug name and disease with a highlighter</div>
+        <div class="comp-tech">Tech: OpenAI GPT-4o · async Python · Pydantic v2</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Text chunk (800 chars)</span>
+          <span class="io-chip out">OUT: Entities + relationships with confidence scores</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-green">
+        <div class="comp-name">🔤 Entity Normalizer</div>
+        <div class="comp-job">Makes sure the same drug isn't stored twice under different names — maps 130+ trade names and synonyms to their official generic names</div>
+        <div class="comp-analogy">💬 Like a translator who knows every nickname — "Tylenol," "Panadol," and "paracetamol" all mean acetaminophen</div>
+        <div class="comp-tech">Tech: Python · rapidfuzz (fuzzy matching) · custom synonym dictionary</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: "Ozempic" / "T2DM" / "BRCA-1"</span>
+          <span class="io-chip out">OUT: "semaglutide" / "Diabetes Mellitus Type 2" / "BRCA1"</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-purple">
+        <div class="comp-name">🏗️ Graph Builder</div>
+        <div class="comp-job">Writes every entity and relationship into Neo4j using MERGE — meaning if a drug already exists, it just updates it instead of creating a duplicate</div>
+        <div class="comp-analogy">💬 Like adding a sticky note to a corkboard — if a note for "Metformin" is already there, you add new strings to it rather than pinning a second note</div>
+        <div class="comp-tech">Tech: Neo4j async driver · Cypher · batch writes</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Extracted entities + relationships</span>
+          <span class="io-chip out">OUT: Neo4j graph nodes and edges</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-purple">
+        <div class="comp-name">🗃️ Vector Store</div>
+        <div class="comp-job">Converts every text chunk into a list of 1536 numbers that represent its meaning, then stores those number-lists in ChromaDB for fast similarity search</div>
+        <div class="comp-analogy">💬 Like describing every book by 1536 characteristics — "medical-ness," "urgency," "drug-related" — so you can find similar books by comparing numbers</div>
+        <div class="comp-tech">Tech: ChromaDB · OpenAI text-embedding-3-small</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Text chunks</span>
+          <span class="io-chip out">OUT: Embeddings stored in ChromaDB</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-green">
+        <div class="comp-name">🕸️ Graph Retriever</div>
+        <div class="comp-job">Has 6 pre-built Cypher queries that walk the knowledge graph to answer specific question types: drug interactions, gene-disease links, comorbidities, cross-document evidence</div>
+        <div class="comp-analogy">💬 Like a detective who has 6 specific investigative techniques — "follow the drug connections," "trace the gene to its disease," "find all papers mentioning this entity"</div>
+        <div class="comp-tech">Tech: Neo4j · Cypher query language · async Python</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Entity name (e.g. "metformin")</span>
+          <span class="io-chip out">OUT: Connected facts with graph hop scores</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-green">
+        <div class="comp-name">⚖️ Hybrid Retriever</div>
+        <div class="comp-job">Runs vector search and graph search simultaneously, then combines their scores into one ranked list using the fusion formula: 0.4×vector + 0.4×graph + 0.2×credibility</div>
+        <div class="comp-analogy">💬 Like a judge combining scores from two different talent show judges — each judge's opinion counts equally, but the source's reputation adds a bonus</div>
+        <div class="comp-tech">Tech: Python · asyncio · score fusion algorithm</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Question + doc type filters</span>
+          <span class="io-chip out">OUT: Ranked results with fused scores + warnings</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-orange">
+        <div class="comp-name">✍️ Answer Generator</div>
+        <div class="comp-job">Takes the top retrieved results and asks GPT-4o to write a clear, cited answer — with strict rules: never invent dosages, always flag drug interactions, always add a safety disclaimer</div>
+        <div class="comp-analogy">💬 Like a senior doctor reviewing all the evidence and writing a report — but required to cite every fact and stamp "for research only" on the bottom</div>
+        <div class="comp-tech">Tech: OpenAI GPT-4o · Pydantic v2 response models</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: Question + top evidence + warnings</span>
+          <span class="io-chip out">OUT: Answer + confidence % + citations + disclaimer</span>
+        </div>
+      </div>
+
+      <div class="comp-card c-gray">
+        <div class="comp-name">⚡ FastAPI Server</div>
+        <div class="comp-job">The front door of the whole system — exposes 8 REST API endpoints so doctors or apps can trigger ingestion, ask questions, or explore the knowledge graph directly</div>
+        <div class="comp-analogy">💬 Like a restaurant's front-of-house — takes your order (question), sends it to the kitchen (retrieval), and brings back the food (answer)</div>
+        <div class="comp-tech">Tech: FastAPI · uvicorn · async Python · Pydantic v2</div>
+        <div class="io-row">
+          <span class="io-chip in">IN: HTTP requests</span>
+          <span class="io-chip out">OUT: JSON responses</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION E: STORAGE ── -->
+<section id="storage">
+  <div class="container">
+    <p class="section-label">Storage</p>
+    <h2>What Gets Saved Where?</h2>
+    <p class="section-intro">Two very different databases, each doing what it's best at.</p>
+
+    <div class="storage-grid">
+      <div class="storage-card purple">
+        <div class="storage-name">🌐 Neo4j — The Knowledge Graph</div>
+        <div class="storage-tagline">Like a giant corkboard covered in sticky notes, connected by labeled strings</div>
+        <div class="storage-items">
+          <div class="storage-item"><span class="si-what">Drug nodes</span><span class="si-why">Metformin, Warfarin, Semaglutide...</span></div>
+          <div class="storage-item"><span class="si-what">Disease nodes</span><span class="si-why">T2DM, Heart Failure, Breast Cancer...</span></div>
+          <div class="storage-item"><span class="si-what">Gene nodes</span><span class="si-why">BRCA1, AMPK, TP53...</span></div>
+          <div class="storage-item"><span class="si-what">INTERACTS_WITH edges</span><span class="si-why">Drug safety connections with evidence quotes</span></div>
+          <div class="storage-item"><span class="si-what">ASSOCIATED_WITH edges</span><span class="si-why">Gene → Disease links from research papers</span></div>
+          <div class="storage-item"><span class="si-what">Chunk → Document</span><span class="si-why">PART_OF relationships for cross-doc search</span></div>
+        </div>
+      </div>
+      <div class="storage-card green">
+        <div class="storage-name">🗃️ ChromaDB — The Vector Store</div>
+        <div class="storage-tagline">Like a library card catalog, but each card is a list of 1536 numbers describing the meaning of a passage</div>
+        <div class="storage-items">
+          <div class="storage-item"><span class="si-what">Text chunks</span><span class="si-why">800-character passages from all documents</span></div>
+          <div class="storage-item"><span class="si-what">Vector embeddings</span><span class="si-why">1536-number "meaning fingerprint" per chunk</span></div>
+          <div class="storage-item"><span class="si-what">source_type tag</span><span class="si-why">For filtering by document type</span></div>
+          <div class="storage-item"><span class="si-what">title, date, section</span><span class="si-why">Metadata for citations in answers</span></div>
+          <div class="storage-item"><span class="si-what">HNSW index</span><span class="si-why">Fast approximate nearest-neighbor search</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem">
+      <h3 style="margin-bottom:1rem;font-size:1.05rem;font-weight:600">Source Credibility Weights</h3>
+      <table class="cred-table">
+        <thead>
+          <tr>
+            <th>Document Type</th>
+            <th>Why this weight?</th>
+            <th>Trust Score</th>
+            <th>Bar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Research Paper</strong></td>
+            <td>Peer-reviewed by other scientists before publishing</td>
+            <td><strong>1.0</strong></td>
+            <td><div class="cred-bar-wrap"><div class="cred-bar" style="width:100%;background:#3b82f6"></div></div></td>
+          </tr>
+          <tr>
+            <td><strong>Internal Report</strong></td>
+            <td>Written by qualified staff but not externally reviewed</td>
+            <td><strong>0.85</strong></td>
+            <td><div class="cred-bar-wrap"><div class="cred-bar" style="width:85%;background:#10b981"></div></div></td>
+          </tr>
+          <tr>
+            <td><strong>News Article</strong></td>
+            <td>Journalistic — may simplify or misinterpret science</td>
+            <td><strong>0.60</strong></td>
+            <td><div class="cred-bar-wrap"><div class="cred-bar" style="width:60%;background:#f59e0b"></div></div></td>
+          </tr>
+          <tr>
+            <td><strong>Email / Slack</strong></td>
+            <td>Informal conversation — useful context but low authority</td>
+            <td><strong>0.40</strong></td>
+            <td><div class="cred-bar-wrap"><div class="cred-bar" style="width:40%;background:#ef4444"></div></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION F: DESIGN DECISIONS ── -->
+<section id="decisions">
+  <div class="container">
+    <p class="section-label">Why Was It Built This Way?</p>
+    <h2>Key Design Decisions</h2>
+    <p class="section-intro">Every choice has a reason. Here's the thinking behind the big ones.</p>
+
+    <div class="decisions">
+      <div class="decision">
+        <div class="d-icon">🕸️</div>
+        <div>
+          <h4>Why use a graph database (Neo4j) instead of a regular database?</h4>
+          <p>Drug interactions are naturally a <strong>network</strong>. Drug A interacts with Drug B, which is contraindicated for Disease C, which is comorbid with Disease D. In a regular database (like Excel or MySQL), answering "what diseases are 2 hops away from Metformin?" would require 50+ joins. Neo4j answers it in one query by <strong>following edges</strong> — like following strings on a corkboard.</p>
+        </div>
+      </div>
+      <div class="decision">
+        <div class="d-icon">✂️</div>
+        <div>
+          <h4>Why cut documents into 800-character chunks?</h4>
+          <p>AI language models (like GPT-4o) can only read a limited amount of text at one time — like reading one page at a time. If you give them an entire research paper, the important sentence about drug interactions might get buried. By cutting into <strong>800-character pieces</strong>, you make sure each piece is small enough to be meaningfully searched and fed to the AI.</p>
+        </div>
+      </div>
+      <div class="decision">
+        <div class="d-icon">🔤</div>
+        <div>
+          <h4>Why normalize drug names before storing them?</h4>
+          <p>Medical documents are messy. One paper says "Metformin," another says "Glucophage," another says "dimethylbiguanide." Without normalization, you'd have <strong>3 separate nodes</strong> for the same drug, and a query for "Metformin interactions" would miss the other two. The normalizer maps all 3 → "metformin" before storing, so the graph stays clean.</p>
+        </div>
+      </div>
+      <div class="decision">
+        <div class="d-icon">⚖️</div>
+        <div>
+          <h4>Why combine vector search AND graph search?</h4>
+          <p>Each method has a blind spot. <strong>Vector search</strong> is great at finding text that sounds similar but misses logical connections (it doesn't know Drug A and Drug B are related just because they share a node). <strong>Graph search</strong> finds connections but can miss relevant text that doesn't use exact entity names. Combining both gives answers that are both <em>semantically relevant</em> and <em>logically connected</em>.</p>
+        </div>
+      </div>
+      <div class="decision">
+        <div class="d-icon">🛡️</div>
+        <div>
+          <h4>Why always show drug interaction warnings even at low confidence?</h4>
+          <p>In medicine, a <strong>missed drug interaction can kill someone</strong>. So drug interaction warnings are surfaced unconditionally — even if the overall confidence score is low. The system is designed so that safety information is never filtered out by an algorithm, even if the evidence is weak. The user can decide how to act on it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION G: GLOSSARY ── -->
+<section id="glossary">
+  <div class="container">
+    <p class="section-label">Words You Might Not Know</p>
+    <h2>Glossary</h2>
+    <p class="section-intro">Every technical term used in this project — in plain English.</p>
+
+    <div class="glossary-grid">
+      <div class="gloss-card">
+        <div class="gloss-term">Vector Embedding</div>
+        <div class="gloss-def">A list of ~1536 numbers that captures the "meaning" of a sentence. Two sentences with similar meaning will have similar number-lists, so a computer can find them by comparing numbers.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Graph Database</div>
+        <div class="gloss-def">A database that stores things as nodes (dots) and relationships (lines between dots). Perfect for medical data where everything is connected — drugs connect to diseases connect to genes.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">RAG (Retrieval-Augmented Generation)</div>
+        <div class="gloss-def">A technique where an AI first searches a database for relevant facts, then uses those facts to write an answer — instead of relying on what it memorized during training. This prevents made-up answers.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">GraphRAG</div>
+        <div class="gloss-def">RAG + a knowledge graph. Instead of only searching for similar text, it also walks connections in a graph — finding facts that are related by logic, not just by wording.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Cypher</div>
+        <div class="gloss-def">The query language used to ask questions to Neo4j. Like SQL is for regular databases, Cypher is for graph databases. Example: MATCH (d:Drug)-[:INTERACTS_WITH]->(d2:Drug) means "find all drug-drug interactions."</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">MERGE (Neo4j)</div>
+        <div class="gloss-def">A Neo4j command that means "create this node/relationship if it doesn't exist yet; update it if it does." Prevents duplicates when ingesting the same drug from 10 different documents.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Chunk</div>
+        <div class="gloss-def">A small piece of a document (800 characters in this project). Documents are split into chunks so the AI can search and process them piece by piece.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Fuzzy Matching</div>
+        <div class="gloss-def">Finding a match even when the spelling isn't exact. Used in the Entity Normalizer to match "Tylenol" to "acetaminophen" even with slight typos or variations.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Score Fusion</div>
+        <div class="gloss-def">Combining multiple scores into one final score. Here: 40% from semantic similarity + 40% from graph connection strength + 20% from how trustworthy the source document is.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Entity Extraction</div>
+        <div class="gloss-def">Reading a text and pulling out specific types of "things" — like drug names, disease names, and gene names. In this project, GPT-4o does the extraction.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">FastAPI</div>
+        <div class="gloss-def">A Python framework for building web APIs quickly. It automatically generates interactive documentation at /docs so you can test every endpoint in your browser.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Credibility Score</div>
+        <div class="gloss-def">A number (0.4 to 1.0) assigned to each document type based on how trustworthy it is. Research papers score 1.0 (peer-reviewed). Slack messages score 0.4 (informal).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p><strong>Healthcare GraphRAG</strong> · System Design · Generated by <strong>/system-design</strong> global skill</p>
+  <p style="margin-top:.4rem">⚕️ This system is for <strong>research purposes only</strong>. Always consult a licensed medical professional.</p>
+</footer>
+
+</body>
+</html>
