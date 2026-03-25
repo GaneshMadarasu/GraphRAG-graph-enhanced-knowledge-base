@@ -22,9 +22,9 @@ A production-quality knowledge base system that combines a Neo4j knowledge graph
   │         ├─────────────────────────┐                     │
   │         ▼                         ▼                     │
   │  ┌─────────────────┐   ┌──────────────────────┐        │
-  │  │ Entity Extractor│   │  OpenAI Embeddings   │        │
-  │  │  (GPT-4o)       │   │  text-embedding-3-   │        │
-  │  │  Entities +     │   │  small               │        │
+  │  │ Entity Extractor│   │  sentence-transformers│        │
+  │  │  (Claude Haiku) │   │  all-MiniLM-L6-v2    │        │
+  │  │  Entities +     │   │  (local, no API)      │        │
   │  │  Relationships  │   └──────────┬───────────┘        │
   │  └────────┬────────┘              │                     │
   │           │                       │                     │
@@ -45,8 +45,8 @@ A production-quality knowledge base system that combines a Neo4j knowledge graph
   │       ├──────────────────────┬──────────────────────┐  │
   │       ▼                      ▼                       │  │
   │  ┌─────────────┐    ┌──────────────────┐            │  │
-  │  │   spaCy NER │    │  OpenAI Embed    │            │  │
-  │  │   Entity    │    │  Query Vector    │            │  │
+  │  │   spaCy NER │    │  sentence-       │            │  │
+  │  │   Entity    │    │  transformers    │            │  │
   │  │   Extraction│    └────────┬─────────┘            │  │
   │  └──────┬──────┘             │                      │  │
   │         │                    ▼                      │  │
@@ -68,9 +68,9 @@ A production-quality knowledge base system that combines a Neo4j knowledge graph
   │           └────────┬─────────┘                      │  │
   │                    ▼                                 │  │
   │           ┌──────────────────┐                      │  │
-  │           │  Answer          │  GPT-4o with         │  │
+  │           │  Answer          │  Claude Sonnet with  │  │
   │           │  Generator       │  grounded context    │  │
-  │           │  (GPT-4o)        │  + citation          │  │
+  │           │  (Claude Sonnet) │  + citation          │  │
   │           └────────┬─────────┘                      │  │
   │                    ▼                                 │  │
   │              Final Answer + Sources                  │  │
@@ -99,16 +99,16 @@ graphrag/
 │   ├── ingestion/
 │   │   ├── document_loader.py  # Load .txt, .pdf, .md files
 │   │   ├── chunker.py          # RecursiveCharacterTextSplitter
-│   │   ├── entity_extractor.py # GPT-4o entity/relationship extraction
+│   │   ├── entity_extractor.py # Claude Haiku entity/relationship extraction
 │   │   └── graph_builder.py    # Write entities+edges to Neo4j
 │   ├── embeddings/
-│   │   └── vector_store.py     # ChromaDB + OpenAI embeddings
+│   │   └── vector_store.py     # ChromaDB + sentence-transformers embeddings
 │   ├── retrieval/
 │   │   ├── graph_retriever.py  # Cypher traversal (1-hop + paths)
 │   │   ├── vector_retriever.py # ChromaDB ANN search
 │   │   └── hybrid_retriever.py # Parallel merge with score fusion
 │   ├── generation/
-│   │   └── answer_generator.py # GPT-4o grounded answer generation
+│   │   └── answer_generator.py # Claude Sonnet grounded answer generation
 │   ├── api/
 │   │   └── main.py             # FastAPI: /ingest /query /health /stats
 │   └── utils/
@@ -149,7 +149,7 @@ The rationale: vector search finds semantically similar text even without exact 
 ### Prerequisites
 
 - Docker and Docker Compose
-- An OpenAI API key
+- An Anthropic API key
 
 ### 1. Clone and configure
 
@@ -157,7 +157,7 @@ The rationale: vector search finds semantically similar text even without exact 
 git clone <repo-url>
 cd graphrag
 cp .env.example .env
-# Edit .env and set OPENAI_API_KEY=your_actual_key
+# Edit .env and set ANTHROPIC_API_KEY=your_actual_key
 ```
 
 ### 2. Start services with Docker Compose
@@ -214,8 +214,8 @@ python scripts/ingest.py
 The ingestion pipeline:
 1. Loads all `.txt`, `.md`, and `.pdf` files from `data/sample_docs/`
 2. Splits them into 512-character overlapping chunks
-3. Calls GPT-4o to extract entities (PERSON, ORG, LOCATION, CONCEPT, EVENT, TECHNOLOGY, PRODUCT) and typed relationships
-4. Embeds all chunks with `text-embedding-3-small` and stores them in ChromaDB
+3. Calls Claude Haiku to extract entities (PERSON, ORG, LOCATION, CONCEPT, EVENT, TECHNOLOGY, PRODUCT) and typed relationships
+4. Embeds all chunks with `all-MiniLM-L6-v2` (sentence-transformers, runs locally) and stores them in ChromaDB
 5. Writes entity nodes, chunk nodes, and relationship edges to Neo4j
 
 ---
@@ -341,14 +341,14 @@ RETURN c.text LIMIT 5
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | *(required)* | OpenAI API key |
+| `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
 | `NEO4J_URI` | `bolt://localhost:7687` | Neo4j connection URI |
 | `NEO4J_USER` | `neo4j` | Neo4j username |
 | `NEO4J_PASSWORD` | `password` | Neo4j password |
 | `CHROMA_PERSIST_DIR` | `./chroma_db` | ChromaDB persistence directory |
-| `EXTRACTION_MODEL` | `gpt-4o` | Model for entity extraction |
-| `EMBEDDING_MODEL` | `text-embedding-3-small` | Model for embeddings |
-| `GENERATION_MODEL` | `gpt-4o` | Model for answer generation |
+| `EXTRACTION_MODEL` | `claude-haiku-4-5-20251001` | Claude model for entity extraction |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | sentence-transformers model (local) |
+| `GENERATION_MODEL` | `claude-sonnet-4-6` | Claude model for answer generation |
 | `CHUNK_SIZE` | `512` | Characters per chunk |
 | `CHUNK_OVERLAP` | `64` | Overlap between adjacent chunks |
 | `VECTOR_TOP_K` | `5` | Number of vector results to retrieve |

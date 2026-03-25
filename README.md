@@ -15,9 +15,9 @@ Documents (.txt / .md / .pdf)
         ▼
     Chunker (512 chars, 64 overlap)
         │
-        ├──► Entity Extractor (GPT-4o) ──► Neo4j Graph
+        ├──► Entity Extractor (Claude Haiku) ──► Neo4j Graph
         │
-        └──► Embeddings (text-embedding-3-small) ──► ChromaDB
+        └──► Embeddings (all-MiniLM-L6-v2) ──► ChromaDB
                                     │
                              Query Time
                                     │
@@ -29,7 +29,7 @@ Documents (.txt / .md / .pdf)
               └─────────────── Hybrid Merger ────────────┘
                                     │
                                     ▼
-                         Answer Generator (GPT-4o)
+                       Answer Generator (Claude Sonnet)
 ```
 
 ---
@@ -40,8 +40,8 @@ Documents (.txt / .md / .pdf)
 |---|---|
 | Graph DB | Neo4j 5.25 (APOC plugin) |
 | Vector DB | ChromaDB 0.5.17 (HNSW) |
-| LLM | GPT-4o (extraction + generation) |
-| Embeddings | OpenAI text-embedding-3-small |
+| LLM | Claude Haiku (extraction) + Claude Sonnet (generation) |
+| Embeddings | sentence-transformers all-MiniLM-L6-v2 (local) |
 | NLP | spaCy en_core_web_sm |
 | API | FastAPI + Uvicorn |
 | Chunking | LangChain RecursiveCharacterTextSplitter |
@@ -52,7 +52,7 @@ Documents (.txt / .md / .pdf)
 
 ## Features
 
-- **Automatic knowledge graph construction** — extracts entities (PERSON, ORG, LOCATION, CONCEPT, EVENT, TECHNOLOGY, PRODUCT) and typed relationships (CREATED, INVENTED, WORKED_AT, INFLUENCED, etc.) using GPT-4o
+- **Automatic knowledge graph construction** — extracts entities (PERSON, ORG, LOCATION, CONCEPT, EVENT, TECHNOLOGY, PRODUCT) and typed relationships (CREATED, INVENTED, WORKED_AT, INFLUENCED, etc.) using Claude Haiku
 - **Hybrid retrieval** — fuses graph (40%) and vector (60%) scores, deduplicates by chunk ID, re-ranks
 - **Graph traversal** — 1-hop neighbor lookup + shortest path queries (up to 4 hops)
 - **Grounded generation** — answers cite source chunks and entity triples; no hallucination beyond retrieved context
@@ -66,7 +66,7 @@ Documents (.txt / .md / .pdf)
 
 ### Prerequisites
 - Docker & Docker Compose
-- OpenAI API key
+- Anthropic API key
 
 ### Run with Docker
 
@@ -74,7 +74,7 @@ Documents (.txt / .md / .pdf)
 git clone <repo-url>
 cd graphrag
 cp .env.example .env
-# Set OPENAI_API_KEY in .env
+# Set ANTHROPIC_API_KEY in .env
 docker-compose up -d
 ```
 
@@ -127,7 +127,7 @@ python scripts/query.py "Who invented the transistor?" 5
 Key variables in `.env`:
 
 ```env
-OPENAI_API_KEY=your_key
+ANTHROPIC_API_KEY=your_key
 
 # Neo4j
 NEO4J_URI=bolt://localhost:7687
@@ -143,9 +143,9 @@ VECTOR_TOP_K=5
 GRAPH_HOP_LIMIT=20
 
 # Models
-EXTRACTION_MODEL=gpt-4o
-EMBEDDING_MODEL=text-embedding-3-small
-GENERATION_MODEL=gpt-4o
+EXTRACTION_MODEL=claude-haiku-4-5-20251001
+EMBEDDING_MODEL=all-MiniLM-L6-v2
+GENERATION_MODEL=claude-sonnet-4-6
 ```
 
 ---
@@ -159,7 +159,7 @@ graphrag/
 │   ├── ingestion/      # Loader, chunker, entity extractor, graph builder
 │   ├── embeddings/     # ChromaDB vector store
 │   ├── retrieval/      # Graph, vector, and hybrid retrievers
-│   ├── generation/     # GPT-4o answer generator
+│   ├── generation/     # Claude Sonnet answer generator
 │   └── utils/          # Config, Neo4j client
 ├── scripts/            # CLI runners (ingest.py, query.py)
 ├── data/sample_docs/   # Drop documents here

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-from openai import OpenAI
+from chromadb.utils import embedding_functions
 
 from src.ingestion.chunker import Chunk
 from src.utils.config import get_settings
@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 _chroma_client: Optional[chromadb.PersistentClient] = None
 _collection: Optional[chromadb.Collection] = None
+_embed_fn = None
 
 COLLECTION_NAME = "graphrag_chunks"
 
@@ -43,15 +44,18 @@ def get_collection() -> chromadb.Collection:
     return _collection
 
 
+def _get_embed_fn():
+    """Return (or create) ChromaDB's built-in ONNX embedding function."""
+    global _embed_fn
+    if _embed_fn is None:
+        _embed_fn = embedding_functions.DefaultEmbeddingFunction()
+        logger.info("Loaded ChromaDB default embedding function (all-MiniLM-L6-v2 via ONNX)")
+    return _embed_fn
+
+
 def embed_texts(texts: List[str]) -> List[List[float]]:
-    """Embed a list of texts using OpenAI text-embedding-3-small."""
-    settings = get_settings()
-    client = OpenAI(api_key=settings.openai_api_key)
-    response = client.embeddings.create(
-        model=settings.embedding_model,
-        input=texts,
-    )
-    return [item.embedding for item in response.data]
+    """Embed a list of texts using ChromaDB's ONNX-based embedder."""
+    return _get_embed_fn()(texts)
 
 
 def upsert_chunks(chunks: List[Chunk]) -> None:

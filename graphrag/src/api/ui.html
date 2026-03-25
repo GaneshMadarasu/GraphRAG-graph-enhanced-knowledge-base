@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GraphRAG Explorer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2330;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --warn: #f78166;
+      --muted: #8b949e;
+      --text: #e6edf3;
+      --text2: #c9d1d9;
+      --radius: 8px;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: var(--text);
+    }
+    header .logo span { color: var(--accent); }
+    header .subtitle { font-size: 12px; color: var(--muted); margin-left: 4px; }
+
+    /* health pills */
+    .pills { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer; transition: border-color .2s;
+    }
+    .pill:hover { border-color: var(--accent); }
+    .pill .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted);
+      transition: background .4s;
+    }
+    .pill.ok .dot   { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+    .pill.err .dot  { background: var(--warn);    box-shadow: 0 0 6px var(--warn); }
+    .pill.spin .dot { animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+    /* ── Layout ── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: 1fr;
+      gap: 0;
+      overflow: hidden;
+      height: calc(100vh - 57px);
+    }
+
+    /* ── Sidebar ── */
+    aside {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .section { padding: 16px; border-bottom: 1px solid var(--border); }
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* stats grid */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .stat-card .val {
+      font-size: 22px; font-weight: 700;
+      color: var(--accent); font-family: var(--mono);
+    }
+    .stat-card .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* ingest btn */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; padding: 9px 14px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text2);
+      border-radius: var(--radius);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn:active { transform: scale(.98); }
+    .btn.primary {
+      background: var(--accent); border-color: var(--accent); color: #000;
+      font-weight: 600;
+    }
+    .btn.primary:hover { background: #79bfff; border-color: #79bfff; }
+    .btn.danger { border-color: #58252a; color: var(--warn); }
+    .btn.danger:hover { border-color: var(--warn); background: #1a0d0f; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    /* entity lookup */
+    .input-row { display: flex; gap: 6px; }
+    input[type=text] {
+      flex: 1;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--radius);
+      padding: 8px 10px; font-size: 13px;
+      outline: none; transition: border-color .2s;
+    }
+    input[type=text]:focus { border-color: var(--accent); }
+    input[type=text]::placeholder { color: var(--muted); }
+
+    /* entity results */
+    .entity-result {
+      margin-top: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      font-size: 12px;
+    }
+    .entity-result .er-name {
+      padding: 8px 10px; background: #1d2d40;
+      font-weight: 600; color: var(--accent);
+      font-family: var(--mono);
+    }
+    .entity-result .er-row {
+      padding: 5px 10px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between;
+    }
+    .er-row .k { color: var(--muted); }
+    .er-row .v { color: var(--text2); font-family: var(--mono); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .neighbor-list { padding: 6px 10px; border-top: 1px solid var(--border); }
+    .neighbor-list .nb-title { color: var(--muted); font-size: 10px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
+    .nb-tag {
+      display: inline-block; margin: 2px 2px; padding: 2px 7px;
+      background: #1d2d40; color: var(--accent); border-radius: 3px;
+      font-size: 11px; cursor: pointer;
+    }
+    .nb-tag:hover { background: #2a3f55; }
+
+    /* ── Content ── */
+    .content {
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* tab bar */
+    .tab-bar {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tab {
+      padding: 12px 20px; font-size: 13px; font-weight: 500;
+      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color .2s;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover:not(.active) { color: var(--text2); }
+
+    /* panels */
+    .panel { display: none; flex: 1; overflow-y: auto; padding: 20px; }
+    .panel.active { display: flex; flex-direction: column; gap: 14px; }
+
+    /* query box */
+    .query-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    textarea {
+      width: 100%; padding: 14px 16px;
+      background: transparent; border: none;
+      color: var(--text); font-size: 14px;
+      font-family: var(--font); resize: vertical;
+      min-height: 80px; outline: none; line-height: 1.5;
+    }
+    textarea::placeholder { color: var(--muted); }
+    .query-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-top: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .topk-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+    .topk-row input[type=range] { accent-color: var(--accent); cursor: pointer; }
+    .topk-val { color: var(--text2); font-family: var(--mono); width: 16px; }
+
+    /* answer card */
+    .answer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .answer-header {
+      padding: 10px 14px;
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: .8px;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .answer-body { padding: 16px; font-size: 14px; line-height: 1.7; color: var(--text2); white-space: pre-wrap; }
+
+    /* meta row */
+    .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--border); }
+    .chip {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 4px; font-size: 11px;
+      background: var(--surface2); border: 1px solid var(--border);
+    }
+    .chip.src { border-color: #2a4a6b; color: #79bfff; }
+    .chip.ent { border-color: #2a4a30; color: #56d364; }
+    .chip.cnt { border-color: #3a2a0a; color: #e3b341; }
+
+    /* history */
+    .history-list { display: flex; flex-direction: column; gap: 6px; }
+    .hist-item {
+      padding: 10px 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); cursor: pointer; transition: border-color .2s;
+      font-size: 12px;
+    }
+    .hist-item:hover { border-color: var(--accent); }
+    .hist-q { color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+    .hist-a { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* logs panel */
+    .log-container {
+      flex: 1; background: #0a0d10; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px;
+      font-family: var(--mono); font-size: 12px; line-height: 1.6;
+      overflow-y: auto; min-height: 300px;
+    }
+    .log-line { margin-bottom: 2px; }
+    .log-line .ts { color: var(--muted); margin-right: 8px; }
+    .log-line.info .msg  { color: var(--text2); }
+    .log-line.ok   .msg  { color: var(--accent2); }
+    .log-line.err  .msg  { color: var(--warn); }
+    .log-line.warn .msg  { color: #e3b341; }
+
+    /* ingest result */
+    .ingest-result {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    }
+    .ingest-stat { text-align: center; }
+    .ingest-stat .n { font-size: 26px; font-weight: 700; color: var(--accent2); font-family: var(--mono); }
+    .ingest-stat .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface2) 25%, #252d3a 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500;
+      background: var(--surface); border: 1px solid var(--border);
+      box-shadow: 0 8px 24px #00000066;
+      transform: translateY(80px); opacity: 0;
+      transition: all .25s ease; z-index: 9999;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.ok  { border-color: var(--accent2); color: var(--accent2); }
+    #toast.err { border-color: var(--warn); color: var(--warn); }
+
+    /* empty state */
+    .empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--muted); gap: 10px; text-align: center;
+    }
+    .empty svg { opacity: .25; }
+    .empty p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+
+    /* scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">Graph<span>RAG</span> <span style="font-weight:300;color:var(--muted)">Explorer</span></div>
+  <div class="pills">
+    <div class="pill spin" id="pill-neo4j" onclick="checkHealth()">
+      <div class="dot"></div><span>Neo4j</span>
+    </div>
+    <div class="pill spin" id="pill-chroma" onclick="checkHealth()">
+      <div class="dot"></div><span>ChromaDB</span>
+    </div>
+    <div class="pill" id="pill-api" onclick="checkHealth()" style="border-color:#f78166">
+      <div class="dot" style="background:var(--warn)"></div><span>API</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- ── Sidebar ── -->
+  <aside>
+
+    <!-- Stats -->
+    <div class="section">
+      <div class="section-title">Knowledge Base</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="val" id="stat-entities">—</div>
+          <div class="lbl">Entities</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="stat-rels">—</div>
+          <div class="lbl">Relations</div>
+        </div>
+        <div class="stat-card" style="grid-column:1/-1">
+          <div class="val" id="stat-chunks">—</div>
+          <div class="lbl">Chunks</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingest -->
+    <div class="section">
+      <div class="section-title">Ingestion</div>
+      <button class="btn primary" id="btn-ingest" onclick="runIngest()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
+        </svg>
+        Ingest Documents
+      </button>
+    </div>
+
+    <!-- Entity Lookup -->
+    <div class="section" style="flex:1">
+      <div class="section-title">Entity Lookup</div>
+      <div class="input-row">
+        <input type="text" id="entity-input" placeholder="Search entity…" onkeydown="if(event.key==='Enter')lookupEntity()" />
+        <button class="btn" style="width:auto;padding:8px 10px" onclick="lookupEntity()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </button>
+      </div>
+      <div id="entity-result"></div>
+    </div>
+
+  </aside>
+
+  <!-- ── Content ── -->
+  <div class="content">
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchTab('query',this)">Query</div>
+      <div class="tab" onclick="switchTab('history',this)">History</div>
+      <div class="tab" onclick="switchTab('logs',this)">Logs</div>
+    </div>
+
+    <!-- Query Panel -->
+    <div class="panel active" id="panel-query">
+      <div class="query-area">
+        <textarea id="question" placeholder="Ask anything about your knowledge base…" rows="3"
+          onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();runQuery()}"
+        ></textarea>
+        <div class="query-footer">
+          <div class="topk-row">
+            <span>Top-K</span>
+            <input type="range" min="1" max="20" value="5" id="topk"
+              oninput="document.getElementById('topk-val').textContent=this.value" />
+            <span class="topk-val" id="topk-val">5</span>
+          </div>
+          <button class="btn primary" id="btn-query" onclick="runQuery()" style="width:auto;padding:8px 18px">
+            Ask  <kbd style="font-size:10px;opacity:.7;margin-left:4px">⌘↵</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div id="query-result"></div>
+    </div>
+
+    <!-- History Panel -->
+    <div class="panel" id="panel-history">
+      <div id="history-container">
+        <div class="empty">
+          <svg width="48" height="48" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z"/>
+            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z"/>
+            <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z"/>
+          </svg>
+          <p>No queries yet. Ask something in the Query tab to see history here.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs Panel -->
+    <div class="panel" id="panel-logs">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:-6px">
+        <button class="btn danger" style="width:auto;padding:6px 12px;font-size:12px" onclick="clearLogs()">Clear Logs</button>
+      </div>
+      <div class="log-container" id="log-output"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  const API = 'http://localhost:8000';
+  const history = [];
+
+  /* ── Logging ── */
+  function log(msg, level='info') {
+    const box = document.getElementById('log-output');
+    const now = new Date().toLocaleTimeString('en-US', {hour12:false});
+    const div = document.createElement('div');
+    div.className = `log-line ${level}`;
+    div.innerHTML = `<span class="ts">${now}</span><span class="msg">${escHtml(msg)}</span>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+  function clearLogs() { document.getElementById('log-output').innerHTML = ''; }
+
+  /* ── Toast ── */
+  function toast(msg, type='ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className = `show ${type}`;
+    setTimeout(() => el.className = '', 2400);
+  }
+
+  /* ── Tabs ── */
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`panel-${name}`).classList.add('active');
+  }
+
+  /* ── Health ── */
+  async function checkHealth() {
+    setPill('neo4j','spin'); setPill('chroma','spin');
+    document.getElementById('pill-api').className = 'pill spin';
+    log('Checking service health…');
+    try {
+      const r = await fetch(`${API}/health`);
+      const d = await r.json();
+      setPill('neo4j',  d.neo4j     === 'connected' ? 'ok' : 'err');
+      setPill('chroma', d.chromadb  === 'connected' ? 'ok' : 'err');
+      document.getElementById('pill-api').className = 'pill ok';
+      document.getElementById('pill-api').querySelector('.dot').style.cssText = 'background:var(--accent2);box-shadow:0 0 6px var(--accent2)';
+      log(`Health: neo4j=${d.neo4j}, chromadb=${d.chromadb}, status=${d.status}`,
+          d.status === 'healthy' ? 'ok' : 'warn');
+      fetchStats();
+    } catch(e) {
+      setPill('neo4j','err'); setPill('chroma','err');
+      document.getElementById('pill-api').className = 'pill err';
+      log(`API unreachable at ${API} — is the server running?`, 'err');
+    }
+  }
+
+  function setPill(id, state) {
+    const el = document.getElementById(`pill-${id}`);
+    el.className = `pill ${state}`;
+    if(state==='ok') el.querySelector('.dot').style.cssText='background:var(--accent2);box-shadow:0 0 6px var(--accent2)';
+    else if(state==='err') el.querySelector('.dot').style.cssText='background:var(--warn);box-shadow:0 0 6px var(--warn)';
+    else el.querySelector('.dot').style.cssText='background:var(--muted)';
+  }
+
+  /* ── Stats ── */
+  async function fetchStats() {
+    try {
+      const r = await fetch(`${API}/stats`);
+      const d = await r.json();
+      document.getElementById('stat-entities').textContent = fmt(d.entity_nodes);
+      document.getElementById('stat-rels').textContent     = fmt(d.relationships);
+      document.getElementById('stat-chunks').textContent   = fmt(d.chunks);
+    } catch(_) {}
+  }
+
+  function fmt(n) { return n < 0 ? '?' : n.toLocaleString(); }
+
+  /* ── Ingest ── */
+  async function runIngest() {
+    const btn = document.getElementById('btn-ingest');
+    btn.disabled = true; btn.textContent = 'Ingesting…';
+    log('Starting document ingestion…');
+    try {
+      const r = await fetch(`${API}/ingest`, {method:'POST'});
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.detail || r.statusText);
+      log(`Ingestion complete: ${d.documents_loaded} docs, ${d.chunks_created} chunks, ${d.entities_extracted} entities, ${d.relationships_extracted} relationships`, 'ok');
+      renderIngestResult(d);
+      toast('Ingestion complete ✓');
+      fetchStats();
+    } catch(e) {
+      log(`Ingestion failed: ${e.message}`, 'err');
+      toast(e.message, 'err');
+    } finally {
+      btn.disabled = false; btn.innerHTML = '&#8595; Ingest Documents';
+    }
+  }
+
+  function renderIngestResult(d) {
+    const panel = document.getElementById('panel-query');
+    let el = document.getElementById('ingest-banner');
+    if(!el) { el = document.createElement('div'); el.id='ingest-banner'; panel.prepend(el); }
+    el.innerHTML = `
+      <div class="ingest-result">
+        <div class="ingest-stat"><div class="n">${d.documents_loaded}</div><div class="l">Documents</div></div>
+        <div class="ingest-stat"><div class="n">${d.chunks_created}</div><div class="l">Chunks</div></div>
+        <div class="ingest-stat"><div class="n">${d.entities_extracted}</div><div class="l">Entities</div></div>
+        <div class="ingest-stat"><div class="n">${d.relationships_extracted}</div><div class="l">Relations</div></div>
+      </div>`;
+  }
+
+  /* ── Query ── */
+  async function runQuery() {
+    const question = document.getElementById('question').value.trim();
+    if(!question) { toast('Enter a question first', 'err'); return; }
+    const topK = parseInt(document.getElementById('topk').value);
+
+    const btn = document.getElementById('btn-query');
+    btn.disabled = true; btn.textContent = 'Thinking…';
+    log(`Query (top_k=${topK}): ${question}`);
+
+    const result = document.getElementById('query-result');
+    result.innerHTML = `
+      <div class="answer-card">
+        <div class="answer-header">Answer</div>
+        <div class="answer-body">
+          <div class="skeleton" style="height:14px;width:80%;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:14px;width:65%;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:14px;width:72%"></div>
+        </div>
+      </div>`;
+
+    try {
+      const r = await fetch(`${API}/query`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({question, top_k: topK})
+      });
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.detail || r.statusText);
+
+      log(`Answer received (${d.context_items_used} context items, ${d.entities_used.length} entities)`, 'ok');
+      renderAnswer(d, question);
+
+      history.unshift({question, answer: d});
+      renderHistory();
+    } catch(e) {
+      log(`Query failed: ${e.message}`, 'err');
+      result.innerHTML = `
+        <div class="answer-card">
+          <div class="answer-header" style="color:var(--warn)">Error</div>
+          <div class="answer-body" style="color:var(--warn)">${escHtml(e.message)}</div>
+        </div>`;
+      toast(e.message, 'err');
+    } finally {
+      btn.disabled = false; btn.innerHTML = 'Ask  <kbd style="font-size:10px;opacity:.7;margin-left:4px">⌘↵</kbd>';
+    }
+  }
+
+  function renderAnswer(d, question) {
+    const sources = d.sources.map(s =>
+      `<span class="chip src">📄 ${escHtml(s)}</span>`).join('');
+    const entities = d.entities_used.map(e =>
+      `<span class="chip ent" style="cursor:pointer" onclick="document.getElementById('entity-input').value='${escHtml(e)}';lookupEntity()">${escHtml(e)}</span>`).join('');
+    const ctx = `<span class="chip cnt">🔍 ${d.context_items_used} context items</span>`;
+
+    document.getElementById('query-result').innerHTML = `
+      <div class="answer-card">
+        <div class="answer-header">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
+          Answer
+        </div>
+        <div class="answer-body">${escHtml(d.answer)}</div>
+        <div class="meta-chips">${ctx}${sources}${entities}</div>
+      </div>`;
+  }
+
+  /* ── History ── */
+  function renderHistory() {
+    const box = document.getElementById('history-container');
+    if(!history.length) return;
+    box.innerHTML = `<div class="history-list">${
+      history.map((h,i) => `
+        <div class="hist-item" onclick="loadFromHistory(${i})">
+          <div class="hist-q">${escHtml(h.question)}</div>
+          <div class="hist-a">${escHtml(h.answer.answer.slice(0,120))}…</div>
+        </div>`).join('')
+    }</div>`;
+  }
+
+  function loadFromHistory(i) {
+    const h = history[i];
+    document.getElementById('question').value = h.question;
+    renderAnswer(h.answer, h.question);
+    switchTab('query', document.querySelector('.tab'));
+  }
+
+  /* ── Entity Lookup ── */
+  async function lookupEntity() {
+    const name = document.getElementById('entity-input').value.trim();
+    if(!name) return;
+    const box = document.getElementById('entity-result');
+    box.innerHTML = `<div class="entity-result"><div class="er-name">${escHtml(name)}</div><div class="er-row"><span class="k">Loading…</span></div></div>`;
+    log(`Looking up entity: ${name}`);
+    try {
+      const r = await fetch(`${API}/graph/entity/${encodeURIComponent(name)}`);
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.detail || r.statusText);
+      renderEntity(name, d);
+      log(`Entity found: ${name} — ${(d.neighbors||[]).length} neighbors`, 'ok');
+    } catch(e) {
+      box.innerHTML = `<div class="entity-result"><div class="er-name" style="color:var(--warn)">${escHtml(name)}</div><div class="er-row"><span class="k" style="color:var(--warn)">${escHtml(e.message)}</span></div></div>`;
+      log(`Entity lookup failed: ${e.message}`, 'err');
+    }
+  }
+
+  function renderEntity(name, d) {
+    const neighbors = (d.neighbors || []).slice(0, 20);
+    const props = d.entity || {};
+    const rows = Object.entries(props)
+      .filter(([k]) => k !== 'name')
+      .map(([k,v]) => `<div class="er-row"><span class="k">${escHtml(k)}</span><span class="v" title="${escHtml(String(v))}">${escHtml(String(v))}</span></div>`)
+      .join('');
+    const nbTags = neighbors.map(n =>
+      `<span class="nb-tag" onclick="document.getElementById('entity-input').value='${escHtml(n.name||n)}';lookupEntity()">${escHtml(n.name||n)}</span>`
+    ).join('');
+
+    document.getElementById('entity-result').innerHTML = `
+      <div class="entity-result">
+        <div class="er-name">${escHtml(name)}</div>
+        ${rows}
+        ${nbTags ? `<div class="neighbor-list"><div class="nb-title">Neighbors (${neighbors.length})</div>${nbTags}</div>` : ''}
+      </div>`;
+  }
+
+  /* ── Helpers ── */
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Init ── */
+  checkHealth();
+  log('GraphRAG Explorer loaded. API target: ' + API);
+</script>
+</body>
+</html>

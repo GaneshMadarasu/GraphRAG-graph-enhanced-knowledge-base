@@ -34,6 +34,6 @@ curl -s http://localhost:8000/health | python3 -m json.tool
    - Neo4j Browser: `http://localhost:7474`
 
 ## Notes
-- Requires `.env` to be configured with `OPENAI_API_KEY`
+- Requires `.env` to be configured with `ANTHROPIC_API_KEY`
 - For full Docker stack (API + Neo4j together): `docker-compose -f graphrag/docker-compose.yml up -d`
 - Hot reload is enabled — changes to `src/` restart the server automatically

@@ -1,8 +1,8 @@
-"""Generate grounded answers using GPT-4o with merged context."""
+"""Generate grounded answers using Claude with merged context."""
 import logging
 from typing import List
 
-from openai import OpenAI
+import anthropic
 from pydantic import BaseModel, Field
 
 from src.utils.config import get_settings
@@ -67,15 +67,16 @@ def _format_context(context_items: List[dict]) -> str:
 def generate_answer(query: str, context_items: List[dict]) -> AnswerResult:
     """Generate a grounded answer from query + retrieved context."""
     settings = get_settings()
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     formatted = _format_context(context_items)
 
     try:
-        response = client.chat.completions.create(
+        response = client.messages.create(
             model=settings.generation_model,
+            max_tokens=2048,
+            system=SYSTEM_PROMPT,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": USER_PROMPT.format(
@@ -83,9 +84,8 @@ def generate_answer(query: str, context_items: List[dict]) -> AnswerResult:
                     ),
                 },
             ],
-            temperature=0.1,
         )
-        answer_text = response.choices[0].message.content or ""
+        answer_text = response.content[0].text or ""
     except Exception as exc:
         logger.error("Answer generation failed: %s", exc)
         answer_text = f"Error generating answer: {exc}"

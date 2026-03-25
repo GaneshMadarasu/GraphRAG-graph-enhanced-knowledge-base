@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from src.embeddings.vector_store import get_chunk_count, is_available as chroma_available
@@ -51,6 +52,12 @@ class IngestResponse(BaseModel):
     entities_extracted: int
     relationships_extracted: int
     message: str
+
+
+@app.get("/", include_in_schema=False)
+async def ui():
+    """Serve the GraphRAG Explorer UI."""
+    return FileResponse(Path(__file__).parent / "ui.html")
 
 
 @app.post("/ingest", response_model=IngestResponse)

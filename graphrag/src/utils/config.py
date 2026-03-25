@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    openai_api_key: str = ""
+    anthropic_api_key: str = ""
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Model settings
-    extraction_model: str = "gpt-4o"
-    embedding_model: str = "text-embedding-3-small"
-    generation_model: str = "gpt-4o"
+    extraction_model: str = "claude-haiku-4-5-20251001"
+    embedding_model: str = "chromadb-default"  # all-MiniLM-L6-v2 via ONNX
+    generation_model: str = "claude-sonnet-4-6"
 
     # Chunking settings
     chunk_size: int = 512

@@ -18,7 +18,7 @@ research questions by connecting information across hundreds of heterogeneous do
   │  ┌──────────────┐    ┌──────────┐    ┌─────────────────┐    ┌───────────┐   │
   │  │ Document     │    │ Medical  │    │ Entity          │    │ Graph     │   │
   │  │ Loader       │───▶│ Chunker  │───▶│ Extractor       │───▶│ Builder   │   │
-  │  │              │    │          │    │ (GPT-4o)        │    │           │   │
+  │  │              │    │          │    │ (Claude Haiku)  │    │           │   │
   │  │ • PDF        │    │ 800 char │    │ • Entities      │    │ MERGE     │   │
   │  │ • DOCX       │    │ overlap  │    │ • Relations     │    │ (no dupes)│   │
   │  │ • TXT/HTML   │    │ sentence │    │ • Evidence      │    └─────┬─────┘   │
@@ -39,8 +39,8 @@ research questions by connecting information across hundreds of heterogeneous do
            │  │       Neo4j 5.x         │◀──┤  ChromaDB          │ │  │
            │  │   Knowledge Graph       │   │  Vector Store      │ │  │
            │  │                         │   │                    │ │  │
-           │  │  Disease ──TREATS──▶ Drug  │   │  text-embedding-   │ │  │
-           │  │  Drug ──INTERACTS──▶ Drug  │   │  3-small           │ │  │
+           │  │  Disease ──TREATS──▶ Drug  │   │  all-MiniLM-L6-v2│ │  │
+           │  │  Drug ──INTERACTS──▶ Drug  │   │  (local)        │ │  │
            │  │  Gene ──ASSOC──▶ Disease   │   │  800-char chunks   │ │  │
            │  │  Chunk ──MENTIONS──▶ Entity│   │  + source metadata │ │  │
            │  │  Chunk ──PART_OF──▶ Doc    │   │                    │ │  │
@@ -76,7 +76,7 @@ research questions by connecting information across hundreds of heterogeneous do
            │                                                            │
            │              ┌──────────────────────┐                     │
            │              │  Answer Generator     │                     │
-           │              │  (GPT-4o)             │                     │
+           │              │  (Claude Sonnet)       │                     │
            │              │                       │                     │
            │              │  • Per-source cites   │                     │
            │              │  • ⚠️ Drug warnings   │                     │
@@ -109,7 +109,7 @@ research questions by connecting information across hundreds of heterogeneous do
 ```bash
 cd healthcare_graphrag
 cp .env.example .env
-# Edit .env — set OPENAI_API_KEY
+# Edit .env — set ANTHROPIC_API_KEY
 ```
 
 ### 2. Start infrastructure
@@ -351,17 +351,17 @@ healthcare_graphrag/
     ├── ingestion/
     │   ├── document_loader.py  ← 4 source types + metadata extraction
     │   ├── chunker.py          ← Medical-aware sentence-boundary chunking
-    │   ├── entity_extractor.py ← GPT-4o extraction with Pydantic models
+    │   ├── entity_extractor.py ← Claude Haiku extraction with Pydantic models
     │   ├── entity_normalizer.py← Drug/disease/gene synonym resolution
     │   └── graph_builder.py    ← Neo4j MERGE (no duplicates)
     ├── embeddings/
-    │   └── vector_store.py     ← ChromaDB + OpenAI embeddings
+    │   └── vector_store.py     ← ChromaDB + sentence-transformers embeddings
     ├── retrieval/
     │   ├── graph_retriever.py  ← 6 Cypher query templates
     │   ├── vector_retriever.py ← Semantic search + credibility
     │   └── hybrid_retriever.py ← Score fusion (0.4/0.4/0.2)
     ├── generation/
-    │   └── answer_generator.py ← GPT-4o with citations + safety
+    │   └── answer_generator.py ← Claude Sonnet with citations + safety
     └── api/
         └── main.py             ← FastAPI endpoints
 ```
@@ -391,5 +391,5 @@ confidence score.
 - All answers include: *"This is for research purposes only. Always consult a
   licensed medical professional."*
 - If confidence < 60%: returns "Insufficient evidence found across documents"
-- GPT-4o is explicitly instructed never to hallucinate dosages or clinical recommendations
+- Claude Sonnet is explicitly instructed never to hallucinate dosages or clinical recommendations
 - Patient data in documents must be anonymized before ingestion

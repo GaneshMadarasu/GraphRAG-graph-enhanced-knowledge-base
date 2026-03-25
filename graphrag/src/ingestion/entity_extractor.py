@@ -1,9 +1,9 @@
-"""LLM-based entity and relationship extraction using GPT-4o."""
+"""LLM-based entity and relationship extraction using Claude."""
 import json
 import logging
 from typing import List
 
-from openai import OpenAI
+import anthropic
 from pydantic import BaseModel, Field
 
 from src.ingestion.chunker import Chunk
@@ -67,15 +67,16 @@ class ExtractionResult(BaseModel):
 
 
 def extract_from_chunk(chunk: Chunk) -> ExtractionResult:
-    """Extract entities and relationships from a single chunk using GPT-4o."""
+    """Extract entities and relationships from a single chunk using Claude."""
     settings = get_settings()
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     try:
-        response = client.chat.completions.create(
+        response = client.messages.create(
             model=settings.extraction_model,
+            max_tokens=1024,
+            system=EXTRACTION_SYSTEM_PROMPT,
             messages=[
-                {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": EXTRACTION_USER_PROMPT.format(
@@ -83,10 +84,8 @@ def extract_from_chunk(chunk: Chunk) -> ExtractionResult:
                     ),
                 },
             ],
-            temperature=0,
-            response_format={"type": "json_object"},
         )
-        raw = response.choices[0].message.content or "{}"
+        raw = response.content[0].text or "{}"
         data = json.loads(raw)
     except Exception as exc:
         logger.error(
