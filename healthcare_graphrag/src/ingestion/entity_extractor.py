@@ -1,5 +1,5 @@
 """
-Medical entity + relationship extraction using GPT-4o.
+Medical entity + relationship extraction using Claude.
 
 Design:
 - Uses the exact system prompt specified in requirements.
@@ -16,7 +16,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from openai import AsyncOpenAI
+import anthropic
 from pydantic import BaseModel, Field, field_validator
 
 from src.ingestion.chunker import Chunk
@@ -125,7 +125,7 @@ def _build_user_prompt(chunk_text: str) -> str:
 # ── JSON parser (resilient) ───────────────────────────────────────────────────
 
 def _parse_extraction_json(raw: str) -> Dict[str, Any]:
-    """Extract JSON from GPT-4o response, stripping markdown fences."""
+    """Extract JSON from Claude response, stripping markdown fences."""
     raw = raw.strip()
     # Strip ```json ... ``` fences
     fence_m = re.search(r"```(?:json)?\s*([\s\S]+?)```", raw)
@@ -154,27 +154,25 @@ def _coerce_extraction(data: Dict[str, Any]) -> Dict[str, Any]:
 # ── Extractor class ───────────────────────────────────────────────────────────
 
 class MedicalEntityExtractor:
-    """Async GPT-4o extractor.  Create once, call extract_chunk() per chunk."""
+    """Async Claude extractor.  Create once, call extract_chunk() per chunk."""
 
     def __init__(self, max_concurrency: int = 5) -> None:
         self._settings = get_settings()
-        self._client = AsyncOpenAI(api_key=self._settings.openai_api_key)
+        self._client = anthropic.AsyncAnthropic(api_key=self._settings.anthropic_api_key)
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
     async def extract_chunk(self, chunk: Chunk) -> ExtractionResult:
         async with self._semaphore:
             try:
-                response = await self._client.chat.completions.create(
-                    model=self._settings.openai_model,
+                response = await self._client.messages.create(
+                    model=self._settings.extraction_model,
+                    max_tokens=2048,
+                    system=_SYSTEM_PROMPT,
                     messages=[
-                        {"role": "system", "content": _SYSTEM_PROMPT},
                         {"role": "user", "content": _build_user_prompt(chunk.text)},
                     ],
-                    temperature=0,
-                    response_format={"type": "json_object"},
-                    max_tokens=2048,
                 )
-                raw = response.choices[0].message.content or "{}"
+                raw = response.content[0].text or "{}"
                 data = _coerce_extraction(_parse_extraction_json(raw))
 
                 entities: List[ExtractedEntity] = []

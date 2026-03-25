@@ -421,8 +421,8 @@
     <span class="badge">FastAPI</span>
     <span class="badge">Neo4j 5.x</span>
     <span class="badge">ChromaDB</span>
-    <span class="badge">GPT-4o</span>
-    <span class="badge">text-embedding-3-small</span>
+    <span class="badge">Claude</span>
+    <span class="badge">all-MiniLM-L6-v2 (ONNX)</span>
     <span class="badge">Pydantic v2</span>
     <span class="badge">Docker</span>
   </div>
@@ -541,14 +541,14 @@
         <div class="d-row">
           <div class="d-box orange" style="max-width:220px">
             <div class="box-name">✍️ Answer Generator</div>
-            <div class="box-desc">Gives evidence + citations to GPT-4o to write the final answer</div>
+            <div class="box-desc">Gives evidence + citations to Claude to write the final answer</div>
           </div>
           <div class="d-harrow">
             <div class="h-line"></div>
             <div class="h-label">API call</div>
           </div>
           <div class="d-box orange">
-            <div class="box-name">🤖 OpenAI GPT-4o</div>
+            <div class="box-name">🤖 Anthropic Claude</div>
             <div class="box-desc">Writes a human-readable answer. Never invents facts not in the evidence.</div>
           </div>
         </div>
@@ -580,7 +580,7 @@
             </div>
             <div style="color:#10b981;padding-top:1.2rem">→</div>
             <div class="d-box orange" style="min-width:110px;max-width:130px">
-              <div class="box-name">🧠 GPT-4o Extractor</div>
+              <div class="box-name">🧠 Claude Extractor</div>
               <div class="box-desc">Finds drugs, diseases, genes</div>
             </div>
             <div style="color:#10b981;padding-top:1.2rem">→</div>
@@ -654,8 +654,8 @@
       <div class="flow-step">
         <div class="step-num">6</div>
         <div>
-          <h4>✍️ GPT-4o writes the answer from the evidence</h4>
-          <p>The top results are sent to GPT-4o with strict instructions: <em>only use facts from the evidence, always cite the source document, never invent drug dosages</em>. It writes a clear human-readable answer with inline citations like [Document: Research Paper 1].</p>
+          <h4>✍️ Claude writes the answer from the evidence</h4>
+          <p>The top results are sent to Claude with strict instructions: <em>only use facts from the evidence, always cite the source document, never invent drug dosages</em>. It writes a clear human-readable answer with inline citations like [Document: Research Paper 1].</p>
         </div>
       </div>
       <div class="flow-step">
@@ -702,9 +702,9 @@
 
       <div class="comp-card c-orange">
         <div class="comp-name">🧠 Entity Extractor</div>
-        <div class="comp-job">Sends each chunk to GPT-4o and asks it to find all drugs, diseases, genes, and relationships mentioned — and return them as structured JSON</div>
+        <div class="comp-job">Sends each chunk to Claude and asks it to find all drugs, diseases, genes, and relationships mentioned — and return them as structured JSON</div>
         <div class="comp-analogy">💬 Like a medical student reading a paragraph and circling every drug name and disease with a highlighter</div>
-        <div class="comp-tech">Tech: OpenAI GPT-4o · async Python · Pydantic v2</div>
+        <div class="comp-tech">Tech: Anthropic Claude · async Python · Pydantic v2</div>
         <div class="io-row">
           <span class="io-chip in">IN: Text chunk (800 chars)</span>
           <span class="io-chip out">OUT: Entities + relationships with confidence scores</span>
@@ -737,7 +737,7 @@
         <div class="comp-name">🗃️ Vector Store</div>
         <div class="comp-job">Converts every text chunk into a list of 1536 numbers that represent its meaning, then stores those number-lists in ChromaDB for fast similarity search</div>
         <div class="comp-analogy">💬 Like describing every book by 1536 characteristics — "medical-ness," "urgency," "drug-related" — so you can find similar books by comparing numbers</div>
-        <div class="comp-tech">Tech: ChromaDB · OpenAI text-embedding-3-small</div>
+        <div class="comp-tech">Tech: ChromaDB · sentence-transformers all-MiniLM-L6-v2 (ONNX)</div>
         <div class="io-row">
           <span class="io-chip in">IN: Text chunks</span>
           <span class="io-chip out">OUT: Embeddings stored in ChromaDB</span>
@@ -768,9 +768,9 @@
 
       <div class="comp-card c-orange">
         <div class="comp-name">✍️ Answer Generator</div>
-        <div class="comp-job">Takes the top retrieved results and asks GPT-4o to write a clear, cited answer — with strict rules: never invent dosages, always flag drug interactions, always add a safety disclaimer</div>
+        <div class="comp-job">Takes the top retrieved results and asks Claude to write a clear, cited answer — with strict rules: never invent dosages, always flag drug interactions, always add a safety disclaimer</div>
         <div class="comp-analogy">💬 Like a senior doctor reviewing all the evidence and writing a report — but required to cite every fact and stamp "for research only" on the bottom</div>
-        <div class="comp-tech">Tech: OpenAI GPT-4o · Pydantic v2 response models</div>
+        <div class="comp-tech">Tech: Anthropic Claude · Pydantic v2 response models</div>
         <div class="io-row">
           <span class="io-chip in">IN: Question + top evidence + warnings</span>
           <span class="io-chip out">OUT: Answer + confidence % + citations + disclaimer</span>
@@ -886,7 +886,7 @@
         <div class="d-icon">✂️</div>
         <div>
           <h4>Why cut documents into 800-character chunks?</h4>
-          <p>AI language models (like GPT-4o) can only read a limited amount of text at one time — like reading one page at a time. If you give them an entire research paper, the important sentence about drug interactions might get buried. By cutting into <strong>800-character pieces</strong>, you make sure each piece is small enough to be meaningfully searched and fed to the AI.</p>
+          <p>AI language models (like Claude) can only read a limited amount of text at one time — like reading one page at a time. If you give them an entire research paper, the important sentence about drug interactions might get buried. By cutting into <strong>800-character pieces</strong>, you make sure each piece is small enough to be meaningfully searched and fed to the AI.</p>
         </div>
       </div>
       <div class="decision">
@@ -960,7 +960,7 @@
       </div>
       <div class="gloss-card">
         <div class="gloss-term">Entity Extraction</div>
-        <div class="gloss-def">Reading a text and pulling out specific types of "things" — like drug names, disease names, and gene names. In this project, GPT-4o does the extraction.</div>
+        <div class="gloss-def">Reading a text and pulling out specific types of "things" — like drug names, disease names, and gene names. In this project, Claude does the extraction.</div>
       </div>
       <div class="gloss-card">
         <div class="gloss-term">FastAPI</div>

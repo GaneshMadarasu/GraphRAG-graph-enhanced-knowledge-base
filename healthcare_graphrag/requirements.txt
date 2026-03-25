@@ -4,8 +4,8 @@ uvicorn[standard]==0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
-# OpenAI
-openai==1.57.2
+# Anthropic
+anthropic==0.40.0
 
 # Neo4j
 neo4j==5.27.0

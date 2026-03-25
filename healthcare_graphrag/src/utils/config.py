@@ -14,12 +14,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # ── OpenAI ────────────────────────────────────────────────────────────────
-    openai_api_key: str = Field(..., env="OPENAI_API_KEY")
-    openai_model: str = Field("gpt-4o", env="OPENAI_MODEL")
-    openai_embedding_model: str = Field(
-        "text-embedding-3-small", env="OPENAI_EMBEDDING_MODEL"
-    )
+    # ── Anthropic ─────────────────────────────────────────────────────────────
+    anthropic_api_key: str = Field(..., env="ANTHROPIC_API_KEY")
+    extraction_model: str = Field("claude-haiku-4-5-20251001", env="EXTRACTION_MODEL")
+    generation_model: str = Field("claude-sonnet-4-6", env="GENERATION_MODEL")
 
     # ── Neo4j ─────────────────────────────────────────────────────────────────
     neo4j_uri: str = Field("bolt://localhost:7687", env="NEO4J_URI")
@@ -59,11 +57,11 @@ class Settings(BaseSettings):
     graph_weight: float = 0.4
     credibility_weight: float = 0.2
 
-    @field_validator("openai_api_key")
+    @field_validator("anthropic_api_key")
     @classmethod
     def api_key_not_empty(cls, v: str) -> str:
         if not v or v.strip() == "":
-            raise ValueError("OPENAI_API_KEY must not be empty")
+            raise ValueError("ANTHROPIC_API_KEY must not be empty")
         return v
 
     def get_credibility(self, source_type: str) -> float:

@@ -6,7 +6,7 @@ Medical answer generator with:
 - Medical safety disclaimer
 - Hallucination guard (no drug dosages / clinical recommendations)
 
-Uses GPT-4o with a system prompt that enforces safe, citable medical writing.
+Uses Claude Sonnet with a system prompt that enforces safe, citable medical writing.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from openai import AsyncOpenAI
+import anthropic
 from pydantic import BaseModel, Field
 
 from src.utils.config import get_settings
@@ -94,7 +94,7 @@ class AnswerResponse(BaseModel):
 class MedicalAnswerGenerator:
     def __init__(self) -> None:
         self._settings = get_settings()
-        self._client = AsyncOpenAI(api_key=self._settings.openai_api_key)
+        self._client = anthropic.AsyncAnthropic(api_key=self._settings.anthropic_api_key)
 
     async def generate(
         self,
@@ -152,16 +152,15 @@ class MedicalAnswerGenerator:
         )
 
         try:
-            response = await self._client.chat.completions.create(
-                model=self._settings.openai_model,
+            response = await self._client.messages.create(
+                model=self._settings.generation_model,
+                max_tokens=1500,
+                system=_SYSTEM_PROMPT,
                 messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
                     {"role": "user", "content": user_msg},
                 ],
-                temperature=0.1,
-                max_tokens=1500,
             )
-            raw_answer = response.choices[0].message.content or ""
+            raw_answer = response.content[0].text or ""
 
             # Always prepend drug interaction warnings prominently
             if warnings:
@@ -172,7 +171,7 @@ class MedicalAnswerGenerator:
             final_answer = f"{raw_answer}\n\n{DISCLAIMER}"
 
         except Exception as exc:
-            logger.error("GPT-4o answer generation failed: %s", exc)
+            logger.error("Claude answer generation failed: %s", exc)
             final_answer = (
                 "Answer generation failed due to an API error. "
                 "Raw evidence is available in the sources below.\n\n" + DISCLAIMER

@@ -7,7 +7,7 @@ Metadata stored per chunk:
   - chunk_id, doc_id, source_type, title, date, section
   - All extra source-specific fields (authors, journal, department, etc.)
 
-Embedding: OpenAI text-embedding-3-small (via chromadb's embedding function wrapper)
+Embedding: all-MiniLM-L6-v2 via ChromaDB's built-in ONNX embedding function
 """
 
 from __future__ import annotations
@@ -17,30 +17,12 @@ from typing import Any, Dict, List, Optional
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-from openai import AsyncOpenAI
+from chromadb.utils import embedding_functions
 
 from src.ingestion.chunker import Chunk
 from src.utils.config import get_settings
 
 logger = logging.getLogger(__name__)
-
-
-# ── OpenAI embedding function for ChromaDB ────────────────────────────────────
-
-class OpenAIEmbeddingFunction:
-    """Sync embedding function interface expected by ChromaDB."""
-
-    def __init__(self, api_key: str, model: str) -> None:
-        import openai
-        self._client = openai.OpenAI(api_key=api_key)
-        self._model = model
-
-    def __call__(self, input: List[str]) -> List[List[float]]:  # noqa: A002
-        response = self._client.embeddings.create(
-            model=self._model,
-            input=input,
-        )
-        return [item.embedding for item in response.data]
 
 
 # ── Vector store ──────────────────────────────────────────────────────────────
@@ -52,7 +34,7 @@ class MedicalVectorStore:
         self._settings = get_settings()
         self._client: Optional[chromadb.HttpClient] = None
         self._collection = None
-        self._embed_fn: Optional[OpenAIEmbeddingFunction] = None
+        self._embed_fn = None
 
     def _ensure_connected(self) -> None:
         if self._client is not None:
@@ -64,10 +46,7 @@ class MedicalVectorStore:
                 port=cfg.chroma_port,
                 settings=ChromaSettings(anonymized_telemetry=False),
             )
-            self._embed_fn = OpenAIEmbeddingFunction(
-                api_key=cfg.openai_api_key,
-                model=cfg.openai_embedding_model,
-            )
+            self._embed_fn = embedding_functions.DefaultEmbeddingFunction()
             self._collection = self._client.get_or_create_collection(
                 name=cfg.chroma_collection,
                 embedding_function=self._embed_fn,
