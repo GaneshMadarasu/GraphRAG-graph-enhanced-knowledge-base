@@ -30,6 +30,12 @@ Documents (.txt / .md / .pdf)
                                     │
                                     ▼
                        Answer Generator (Claude Sonnet)
+                                    │
+                    ┌───────────────┴───────────────┐
+                    ▼                               ▼
+             FastAPI REST                    MCP Server
+           (/query, /ingest            (Claude Desktop /
+            /health, /stats)            Claude Code tools)
 ```
 
 ---
@@ -45,8 +51,39 @@ Documents (.txt / .md / .pdf)
 | NLP | spaCy en_core_web_sm |
 | API | FastAPI + Uvicorn |
 | Chunking | LangChain RecursiveCharacterTextSplitter |
+| MCP | mcp>=1.0.0 (FastMCP stdio server) |
 | PDF Parsing | pypdf |
 | Infra | Docker + Docker Compose |
+
+---
+
+## MCP Integration
+
+`graphrag/mcp_server.py` exposes the knowledge base as **MCP (Model Context Protocol) tools**, letting Claude Desktop and Claude Code query it directly mid-conversation.
+
+### Tools
+
+| Tool | Description |
+|---|---|
+| `query_knowledge_base` | Hybrid graph + vector retrieval with a Claude-generated answer |
+| `get_entity` | 1-hop graph neighborhood for any entity |
+| `ingest_documents` | Load → chunk → extract → store a directory of documents |
+| `get_stats` | Entity node, relationship, and chunk counts |
+| `health_check` | Neo4j + ChromaDB connectivity status |
+
+### Quick connect (Claude Desktop)
+
+```json
+{
+  "mcpServers": {
+    "graphrag": {
+      "command": "/path/to/python",
+      "args": ["/path/to/graphrag/mcp_server.py"],
+      "cwd": "/path/to/graphrag"
+    }
+  }
+}
+```
 
 ---
 
@@ -154,6 +191,7 @@ GENERATION_MODEL=claude-sonnet-4-6
 
 ```
 graphrag/
+├── mcp_server.py       # MCP server (Claude Desktop / Claude Code integration)
 ├── src/
 │   ├── api/            # FastAPI server
 │   ├── ingestion/      # Loader, chunker, entity extractor, graph builder

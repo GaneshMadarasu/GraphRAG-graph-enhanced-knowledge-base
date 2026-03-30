@@ -95,6 +95,7 @@ graphrag/
 │       ├── bell_labs.txt
 │       ├── intel_microprocessors.txt
 │       └── early_computers.txt
+├── mcp_server.py               # MCP server (Claude Desktop / Claude Code integration)
 ├── src/
 │   ├── ingestion/
 │   │   ├── document_loader.py  # Load .txt, .pdf, .md files
@@ -354,6 +355,48 @@ RETURN c.text LIMIT 5
 | `VECTOR_TOP_K` | `5` | Number of vector results to retrieve |
 | `GRAPH_HOP_LIMIT` | `20` | Max graph traversal results |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
+
+---
+
+## MCP Server
+
+`mcp_server.py` exposes the knowledge base as **MCP tools** so Claude Desktop and Claude Code can query it directly mid-conversation — no curl, no terminal.
+
+### Tools
+
+| Tool | Description |
+|---|---|
+| `query_knowledge_base` | Hybrid graph + vector retrieval with a Claude-generated answer |
+| `get_entity` | 1-hop graph neighborhood for any entity |
+| `ingest_documents` | Load → chunk → extract → store a directory of documents |
+| `get_stats` | Entity node, relationship, and chunk counts |
+| `health_check` | Neo4j + ChromaDB connectivity status |
+
+### Connect to Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "graphrag": {
+      "command": "/path/to/python",
+      "args": ["/path/to/graphrag/mcp_server.py"],
+      "cwd": "/path/to/graphrag"
+    }
+  }
+}
+```
+
+### Connect to Claude Code
+
+```bash
+claude mcp add graphrag /path/to/python \
+  -- /path/to/graphrag/mcp_server.py \
+  --cwd /path/to/graphrag
+```
+
+> Neo4j and ChromaDB must be running before starting a session that uses the MCP tools (`docker-compose up -d` covers this).
 
 ---
 

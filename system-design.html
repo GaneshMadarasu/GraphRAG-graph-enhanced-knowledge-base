@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphRAG — System Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --blue: #3b82f6;
+    --blue-light: #eff6ff;
+    --green: #10b981;
+    --green-light: #ecfdf5;
+    --purple: #8b5cf6;
+    --purple-light: #f5f3ff;
+    --orange: #f59e0b;
+    --orange-light: #fffbeb;
+    --teal: #06b6d4;
+    --teal-light: #ecfeff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  }
+
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border); padding: 0 2rem;
+  }
+  nav ul { display: flex; list-style: none; gap: 0; overflow-x: auto; max-width: 1100px; margin: 0 auto; }
+  nav a {
+    display: block; padding: .7rem 1rem; text-decoration: none; color: var(--muted);
+    font-size: .8rem; font-weight: 500; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: color .2s, border-color .2s;
+  }
+  nav a:hover { color: var(--blue); border-color: var(--blue); }
+
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 55%, #1e40af 100%);
+    color: white; padding: 4rem 2rem 3rem; text-align: center;
+  }
+  .hero h1 { font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: .4rem; }
+  .hero .tagline { font-size: 1.1rem; color: #93c5fd; margin-bottom: 2rem; max-width: 580px; margin-left: auto; margin-right: auto; }
+  .badges { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+  .badge {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+    color: white; padding: .3rem .85rem; border-radius: 999px; font-size: .78rem; font-weight: 500;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+  section { padding: 4rem 0; }
+  section + section { border-top: 1px solid var(--border); }
+  h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.5px; margin-bottom: .4rem; }
+  .section-label { font-size: .75rem; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; margin-bottom: .5rem; }
+  p { color: var(--muted); margin-bottom: 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ── OVERVIEW ── */
+  .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; }
+  .analogy-card {
+    background: var(--blue-light); border: 1px solid #bfdbfe; border-radius: 12px;
+    padding: 1.25rem 1.5rem; grid-column: 1 / -1;
+  }
+  .analogy-card strong { color: var(--blue); }
+
+  /* ── DIAGRAM ── */
+  .diagram-wrap { background: #0f172a; border-radius: 16px; padding: 2.5rem 2rem; margin-top: 2rem; overflow-x: auto; }
+  .diag-row { display: flex; justify-content: center; align-items: flex-start; gap: 1rem; margin-bottom: 0; }
+  .diag-group {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px; padding: 1rem 1.25rem; min-width: 140px; max-width: 200px; text-align: center;
+  }
+  .diag-group.blue   { border-color: #3b82f6; background: rgba(59,130,246,.12); }
+  .diag-group.green  { border-color: #10b981; background: rgba(16,185,129,.1); }
+  .diag-group.purple { border-color: #8b5cf6; background: rgba(139,92,246,.1); }
+  .diag-group.orange { border-color: #f59e0b; background: rgba(245,158,11,.1); }
+  .diag-group.teal   { border-color: #06b6d4; background: rgba(6,182,212,.1); }
+  .diag-group .box-title { font-size: .8rem; font-weight: 700; color: white; margin-bottom: .25rem; }
+  .diag-group .box-desc  { font-size: .7rem; color: rgba(255,255,255,.55); line-height: 1.4; }
+  .diag-col { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .arrow { color: rgba(255,255,255,.35); font-size: .7rem; text-align: center; white-space: nowrap; }
+  .arrow-down { display: flex; flex-direction: column; align-items: center; gap: 0; color: rgba(255,255,255,.3); font-size: .65rem; }
+  .arrow-v { font-size: 1.1rem; line-height: 1; color: rgba(255,255,255,.3); }
+  .diag-main { display: flex; flex-direction: column; align-items: center; gap: .4rem; width: 100%; }
+  .diag-section-label { font-size: .65rem; font-weight: 600; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: .25rem; }
+  .diag-parallel { display: flex; justify-content: center; gap: 1.5rem; align-items: flex-start; }
+  .diag-parallel-connector {
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+    color: rgba(255,255,255,.25); font-size: .65rem; margin: .1rem 0;
+  }
+  .diag-line { height: 1px; background: rgba(255,255,255,.15); flex: 1; max-width: 60px; }
+
+  /* ── DATA FLOW ── */
+  .flow-steps { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+  .flow-step {
+    display: flex; gap: 1rem; align-items: flex-start;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem;
+    box-shadow: var(--shadow);
+  }
+  .step-num {
+    min-width: 32px; height: 32px; border-radius: 50%; background: var(--blue);
+    color: white; font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step-body strong { font-size: .95rem; color: var(--text); display: block; margin-bottom: .2rem; }
+  .step-body span { font-size: .85rem; color: var(--muted); }
+
+  /* ── COMPONENT CARDS ── */
+  .comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 2rem; }
+  .comp-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.4rem; box-shadow: var(--shadow);
+  }
+  .comp-card .comp-header { display: flex; align-items: center; gap: .65rem; margin-bottom: .8rem; }
+  .comp-icon {
+    width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .comp-icon.blue   { background: var(--blue-light); }
+  .comp-icon.green  { background: var(--green-light); }
+  .comp-icon.purple { background: var(--purple-light); }
+  .comp-icon.orange { background: var(--orange-light); }
+  .comp-icon.teal   { background: var(--teal-light); }
+  .comp-name { font-size: .95rem; font-weight: 700; color: var(--text); }
+  .comp-job { font-size: .85rem; color: var(--muted); margin-bottom: .6rem; }
+  .comp-analogy { font-size: .8rem; color: var(--blue); font-style: italic; margin-bottom: .7rem; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .5rem; }
+  .chip {
+    font-size: .7rem; font-weight: 500; padding: .2rem .6rem; border-radius: 6px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  }
+  .chip.in  { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+  .chip.out { background: #fef3c7; border-color: #fde68a; color: #b45309; }
+
+  /* ── STORAGE TABLE ── */
+  .storage-table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+  .storage-table th {
+    background: var(--bg); border-bottom: 2px solid var(--border);
+    padding: .75rem 1rem; text-align: left; font-size: .8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
+  }
+  .storage-table td { padding: .8rem 1rem; border-bottom: 1px solid var(--border); font-size: .88rem; vertical-align: top; }
+  .storage-table tr:last-child td { border-bottom: none; }
+  .db-badge {
+    display: inline-block; padding: .2rem .6rem; border-radius: 6px; font-size: .75rem; font-weight: 600;
+  }
+  .db-badge.neo4j  { background: var(--purple-light); color: var(--purple); }
+  .db-badge.chroma { background: var(--green-light); color: var(--green); }
+
+  /* ── DECISIONS ── */
+  .decisions { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+  .decision {
+    background: var(--card); border-left: 4px solid var(--blue); border-radius: 0 12px 12px 0;
+    padding: 1rem 1.25rem; box-shadow: var(--shadow);
+  }
+  .decision strong { color: var(--text); font-size: .92rem; }
+  .decision p { font-size: .85rem; color: var(--muted); margin-top: .3rem; margin-bottom: 0; }
+
+  /* ── GLOSSARY ── */
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem; }
+  .gloss-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1rem 1.25rem; box-shadow: var(--shadow);
+  }
+  .gloss-term { font-weight: 700; font-size: .9rem; color: var(--text); margin-bottom: .3rem; }
+  .gloss-def  { font-size: .83rem; color: var(--muted); }
+
+  @media (max-width: 700px) {
+    .overview-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2rem; }
+    .diag-parallel { flex-direction: column; align-items: center; }
+    .comp-grid { grid-template-columns: 1fr; }
+    .glossary-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#diagram">Diagram</a></li>
+    <li><a href="#flow">Data Flow</a></li>
+    <li><a href="#components">Components</a></li>
+    <li><a href="#storage">Storage</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <h1>GraphRAG</h1>
+  <p class="tagline">A smart knowledge base that reads your documents, maps how facts connect, and answers questions with cited evidence.</p>
+  <div class="badges">
+    <span class="badge">Python 3.11</span>
+    <span class="badge">FastAPI</span>
+    <span class="badge">Neo4j</span>
+    <span class="badge">ChromaDB</span>
+    <span class="badge">Claude Haiku</span>
+    <span class="badge">Claude Sonnet</span>
+    <span class="badge">MCP</span>
+    <span class="badge">Docker</span>
+    <span class="badge">spaCy</span>
+    <span class="badge">sentence-transformers</span>
+  </div>
+</div>
+
+<!-- ── OVERVIEW ── -->
+<section id="overview">
+  <div class="container">
+    <div class="section-label">What is this?</div>
+    <h2>Plain English Overview</h2>
+
+    <div class="analogy-card">
+      <strong>The librarian analogy:</strong> Imagine a librarian who has read every document in a library and drawn a giant mind-map showing how facts connect — "Bell Labs invented the transistor", "the transistor led to the microprocessor", "Intel mass-produced the microprocessor". When you ask a question, they search the mind-map <em>and</em> do a quick keyword scan at the same time, then hand your answer to a writing assistant who turns those raw facts into a clear, cited response.
+    </div>
+
+    <div class="overview-grid" style="margin-top:1.5rem;">
+      <div>
+        <p><strong style="color:var(--text)">Two phases: teach, then ask.</strong> First you feed it documents (.txt, .pdf, .md). It reads each one, cuts it into manageable pieces, asks Claude to identify the important things (people, places, technologies) and how they connect, then stores everything in two databases — one shaped like a web of connections, one shaped for fast meaning-based search.</p>
+        <p>When you ask a question, both databases are searched at the same time. The results are blended, scored, and handed to Claude Sonnet, which writes a grounded answer using only what it found — no guessing.</p>
+      </div>
+      <div>
+        <p><strong style="color:var(--text)">Why two databases?</strong> Each one is good at a different kind of question. The graph database (Neo4j) is great at "how are these two things connected?" — it follows relationship chains like a detective. The vector database (ChromaDB) is great at "what text is closest in meaning to my question?" — it finds relevant paragraphs even when the words don't match exactly.</p>
+        <p><strong style="color:var(--text)">MCP layer.</strong> A new Model Context Protocol server lets Claude Desktop and Claude Code call the knowledge base directly mid-conversation — no terminal, no curl commands needed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DIAGRAM ── -->
+<section id="diagram">
+  <div class="container">
+    <div class="section-label">Architecture</div>
+    <h2>The Big Picture</h2>
+    <p>Every box shows what a piece does. Arrows show what flows between them.</p>
+
+    <div class="diagram-wrap">
+      <div class="diag-main">
+
+        <!-- User layer -->
+        <div class="diag-section-label">Access Layer</div>
+        <div class="diag-row">
+          <div class="diag-group blue">
+            <div class="box-title">You / Claude Desktop</div>
+            <div class="box-desc">Ask questions in plain English, or drop in documents to ingest</div>
+          </div>
+        </div>
+
+        <div class="diag-parallel-connector">
+          <div class="diag-line"></div>
+          <span style="color:rgba(255,255,255,.3); font-size:.65rem;">stdio (MCP) &nbsp;|&nbsp; HTTP (REST)</span>
+          <div class="diag-line"></div>
+        </div>
+
+        <!-- Interface layer -->
+        <div class="diag-parallel">
+          <div class="diag-col">
+            <div class="diag-group teal">
+              <div class="box-title">MCP Server</div>
+              <div class="box-desc">mcp_server.py — exposes 5 tools over stdio so Claude can call the knowledge base directly</div>
+            </div>
+          </div>
+          <div class="diag-col">
+            <div class="diag-group blue">
+              <div class="box-title">FastAPI Server</div>
+              <div class="box-desc">REST API on :8000 — /ingest /query /health /stats /graph/entity</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow-down"><div class="arrow-v">↓</div><div class="arrow">routes to ingestion or query pipeline</div></div>
+
+        <!-- Pipeline layer -->
+        <div class="diag-section-label" style="margin-top:.5rem;">Pipelines</div>
+        <div class="diag-parallel">
+          <!-- Ingestion -->
+          <div class="diag-col">
+            <div class="diag-group green" style="max-width:220px;">
+              <div class="box-title">Ingestion Pipeline</div>
+              <div class="box-desc">Loader → Chunker → Entity Extractor → Graph Builder + Vector Upsert</div>
+            </div>
+            <div class="arrow-down"><div class="arrow-v">↓</div><div class="arrow">entities + chunks</div></div>
+          </div>
+          <!-- Query -->
+          <div class="diag-col">
+            <div class="diag-group green" style="max-width:220px;">
+              <div class="box-title">Query Pipeline</div>
+              <div class="box-desc">spaCy NER → Graph Retriever + Vector Retriever → Hybrid Merger → Answer Generator</div>
+            </div>
+            <div class="arrow-down"><div class="arrow-v">↓</div><div class="arrow">queries both DBs in parallel</div></div>
+          </div>
+        </div>
+
+        <!-- Storage layer -->
+        <div class="diag-section-label" style="margin-top:.5rem;">Storage</div>
+        <div class="diag-parallel">
+          <div class="diag-group purple">
+            <div class="box-title">Neo4j</div>
+            <div class="box-desc">Graph DB — entity nodes + typed relationship edges + chunk links</div>
+          </div>
+          <div class="diag-group purple">
+            <div class="box-title">ChromaDB</div>
+            <div class="box-desc">Vector DB — chunk embeddings indexed for cosine similarity search</div>
+          </div>
+        </div>
+
+        <div class="arrow-down"><div class="arrow-v">↓</div><div class="arrow">retrieved context fed to answer generator</div></div>
+
+        <!-- AI layer -->
+        <div class="diag-section-label">AI Models</div>
+        <div class="diag-parallel">
+          <div class="diag-group orange">
+            <div class="box-title">Claude Haiku</div>
+            <div class="box-desc">Fast + cheap — extracts entities and relationships from chunks during ingestion</div>
+          </div>
+          <div class="diag-group orange">
+            <div class="box-title">Claude Sonnet</div>
+            <div class="box-desc">Powerful — writes the final grounded answer using retrieved context</div>
+          </div>
+          <div class="diag-group green" style="max-width:160px;">
+            <div class="box-title">all-MiniLM-L6-v2</div>
+            <div class="box-desc">Local embedding model — runs on your machine, no API needed</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DATA FLOW ── -->
+<section id="flow">
+  <div class="container">
+    <div class="section-label">Step by step</div>
+    <h2>What Happens When You Ask a Question?</h2>
+    <p>Here's the exact journey from your question to the final answer.</p>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>📝 You type a question</strong>
+          <span>e.g. "What did Alan Turing contribute to Bletchley Park?" — sent via Claude Desktop (MCP) or directly to the FastAPI endpoint POST /query.</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>🔤 Named entities are extracted from your question</strong>
+          <span>spaCy's NLP model reads the question and pulls out proper nouns — "Alan Turing", "Bletchley Park". These become the seeds for graph search.</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>⚡ Two searches fire in parallel (at the same time)</strong>
+          <span>The Graph Retriever walks Neo4j looking for "Alan Turing" and "Bletchley Park" — finding 1-hop neighbors and the shortest path between them. The Vector Retriever converts your question into a list of numbers and finds the top-5 most similar document chunks in ChromaDB.</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>⚖️ Results are merged and scored</strong>
+          <span>Vector results × 0.6 + Graph results × 0.4. Duplicates are removed (same chunk from both sources keeps the higher score). Top 5 items move forward.</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>🤖 Claude Sonnet writes the answer</strong>
+          <span>The merged context (graph facts + text chunks) is formatted and sent to Claude Sonnet with a strict prompt: "Answer using ONLY this context. Cite your sources." Claude cannot hallucinate beyond the retrieved evidence.</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>✅ You receive a grounded answer</strong>
+          <span>The response includes the answer text, the chunk IDs used as sources, and the entity names from the knowledge graph. Claude Desktop shows this inline in the conversation.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COMPONENTS ── -->
+<section id="components">
+  <div class="container">
+    <div class="section-label">Building Blocks</div>
+    <h2>Component Cards</h2>
+    <p>Every major module — what it does, what analogy fits it, and what flows through it.</p>
+
+    <div class="comp-grid">
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon blue">📄</div>
+          <div class="comp-name">Document Loader</div>
+        </div>
+        <div class="comp-job">Reads .txt, .pdf, and .md files from a folder and turns them into Python objects with text + metadata.</div>
+        <div class="comp-analogy">"Like a scanner that reads any paper and hands you a clean digital copy."</div>
+        <div class="chip-row">
+          <span class="chip">Python · pypdf</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: files on disk</span>
+          <span class="chip out">OUT: Document objects</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon green">✂️</div>
+          <div class="comp-name">Chunker</div>
+        </div>
+        <div class="comp-job">Cuts each document into 512-character overlapping pieces so AI models can process them. Each chunk overlaps the next by 64 characters so nothing is cut off mid-sentence.</div>
+        <div class="comp-analogy">"Like tearing a book into pages, but each page repeats the last two lines of the previous one."</div>
+        <div class="chip-row">
+          <span class="chip">LangChain TextSplitter</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: Document objects</span>
+          <span class="chip out">OUT: Chunk objects</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon orange">🧠</div>
+          <div class="comp-name">Entity Extractor</div>
+        </div>
+        <div class="comp-job">Sends each chunk to Claude Haiku and asks: "What are the important things here, and how do they connect?" Returns structured entities (PERSON, ORG, CONCEPT…) and typed relationships (CREATED, WORKED_AT, INFLUENCED…).</div>
+        <div class="comp-analogy">"Like a journalist circling key names and drawing arrows between them on a printout."</div>
+        <div class="chip-row">
+          <span class="chip">Claude Haiku</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: text chunk</span>
+          <span class="chip out">OUT: entities + relationships</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon purple">🕸️</div>
+          <div class="comp-name">Graph Builder</div>
+        </div>
+        <div class="comp-job">Writes extracted entities as nodes and relationships as edges into Neo4j. Also links each entity back to the source chunk so you can trace where every fact came from.</div>
+        <div class="comp-analogy">"Like pinning sticky notes to a corkboard and connecting them with labeled strings."</div>
+        <div class="chip-row">
+          <span class="chip">Neo4j · Cypher</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: entities + relationships</span>
+          <span class="chip out">OUT: graph nodes + edges</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon purple">📐</div>
+          <div class="comp-name">Vector Store</div>
+        </div>
+        <div class="comp-job">Converts each text chunk into a list of ~384 numbers (an "embedding") that captures its meaning, then stores them in ChromaDB for fast similarity lookup. Runs entirely on your machine — no API call needed.</div>
+        <div class="comp-analogy">"Like giving every chunk a GPS coordinate based on its meaning — nearby coordinates = similar meaning."</div>
+        <div class="chip-row">
+          <span class="chip">ChromaDB · all-MiniLM-L6-v2</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: text chunk</span>
+          <span class="chip out">OUT: stored embedding</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon green">🔍</div>
+          <div class="comp-name">Graph Retriever</div>
+        </div>
+        <div class="comp-job">At query time, extracts named entities from the question using spaCy, then runs Cypher queries against Neo4j: 1-hop neighbors for each entity, plus shortest path between multiple entities (up to 4 hops).</div>
+        <div class="comp-analogy">"Like a detective following leads — start with a name, see who they connected with, find the path between two suspects."</div>
+        <div class="chip-row">
+          <span class="chip">spaCy · Neo4j Cypher</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: question</span>
+          <span class="chip out">OUT: graph triples + paths</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon green">🎯</div>
+          <div class="comp-name">Vector Retriever</div>
+        </div>
+        <div class="comp-job">Converts the question into an embedding, then asks ChromaDB for the top-K chunks whose embeddings are closest in meaning. Works even when the question uses different words than the document.</div>
+        <div class="comp-analogy">"Like searching for songs by humming the tune — it finds matches by feel, not by exact words."</div>
+        <div class="chip-row">
+          <span class="chip">ChromaDB ANN · cosine similarity</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: question</span>
+          <span class="chip out">OUT: top-K chunks + scores</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon green">⚖️</div>
+          <div class="comp-name">Hybrid Retriever</div>
+        </div>
+        <div class="comp-job">Runs graph and vector retrieval in parallel using asyncio, then fuses their scores (vector × 0.6 + graph × 0.4), deduplicates by chunk ID, and returns the top-K unified results.</div>
+        <div class="comp-analogy">"Like two expert witnesses giving testimony simultaneously — a judge then weighs both opinions into one verdict."</div>
+        <div class="chip-row">
+          <span class="chip">asyncio · score fusion</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: question + top_k</span>
+          <span class="chip out">OUT: ranked context items</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon orange">💬</div>
+          <div class="comp-name">Answer Generator</div>
+        </div>
+        <div class="comp-job">Formats the retrieved context items (graph facts + text chunks) into a structured prompt and sends it to Claude Sonnet, which writes a grounded, cited answer using only the provided evidence.</div>
+        <div class="comp-analogy">"Like a barrister who can only argue using evidence already admitted — no improvising."</div>
+        <div class="chip-row">
+          <span class="chip">Claude Sonnet · Anthropic SDK</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: question + context</span>
+          <span class="chip out">OUT: answer + sources</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon teal">🔌</div>
+          <div class="comp-name">MCP Server</div>
+        </div>
+        <div class="comp-job">Wraps the five core operations as MCP tools exposed over stdio. Claude Desktop and Claude Code can call query_knowledge_base, get_entity, ingest_documents, get_stats, and health_check directly mid-conversation.</div>
+        <div class="comp-analogy">"Like a universal adapter plug — Claude plugs in and the knowledge base becomes one of its hands."</div>
+        <div class="chip-row">
+          <span class="chip">mcp · FastMCP · stdio</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: MCP tool calls</span>
+          <span class="chip out">OUT: JSON responses</span>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <div class="comp-header">
+          <div class="comp-icon blue">🌐</div>
+          <div class="comp-name">FastAPI Server</div>
+        </div>
+        <div class="comp-job">The HTTP interface — exposes POST /ingest, POST /query, GET /health, GET /stats, GET /graph/entity/{name}. Also serves the GraphRAG Explorer web UI. Runs on port 8000 via Uvicorn.</div>
+        <div class="comp-analogy">"The front desk — it routes every incoming request to the right back-office team."</div>
+        <div class="chip-row">
+          <span class="chip">FastAPI · Uvicorn · Pydantic</span>
+        </div>
+        <div class="chip-row">
+          <span class="chip in">IN: HTTP requests</span>
+          <span class="chip out">OUT: JSON responses</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── STORAGE ── -->
+<section id="storage">
+  <div class="container">
+    <div class="section-label">Data</div>
+    <h2>What Gets Saved Where?</h2>
+    <p><strong>Neo4j</strong> is like a web of sticky notes — each note is an entity (a person, place, or concept) and colored strings connect notes that are related, with a label on each string saying <em>how</em> they're related. <strong>ChromaDB</strong> is like a filing cabinet where each drawer is labeled with a meaning-fingerprint, so you can pull out the most relevant folder just by describing what you're looking for.</p>
+
+    <table class="storage-table">
+      <thead>
+        <tr>
+          <th>What</th>
+          <th>Where</th>
+          <th>Why that store?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Entity nodes (people, orgs, concepts, technologies…)</td>
+          <td><span class="db-badge neo4j">Neo4j</span></td>
+          <td>Graph databases are built for "who connects to whom" — fast traversal, no joins needed</td>
+        </tr>
+        <tr>
+          <td>Typed relationship edges (CREATED, WORKED_AT, INFLUENCED…)</td>
+          <td><span class="db-badge neo4j">Neo4j</span></td>
+          <td>Relationships are first-class citizens in Neo4j — you can query the connection itself, not just the nodes</td>
+        </tr>
+        <tr>
+          <td>Chunk → Entity links (MENTIONED_IN)</td>
+          <td><span class="db-badge neo4j">Neo4j</span></td>
+          <td>Lets you trace every entity back to the exact source text that mentioned it</td>
+        </tr>
+        <tr>
+          <td>Text chunk embeddings (vectors of ~384 numbers)</td>
+          <td><span class="db-badge chroma">ChromaDB</span></td>
+          <td>ChromaDB's HNSW index finds nearest neighbors in milliseconds — exact cosine search at scale</td>
+        </tr>
+        <tr>
+          <td>Chunk text + metadata (filename, chunk index)</td>
+          <td><span class="db-badge chroma">ChromaDB</span></td>
+          <td>Stored alongside the embedding so retrieval returns the actual text, not just an ID</td>
+        </tr>
+        <tr>
+          <td>ChromaDB data files</td>
+          <td>Local disk (<code>./chroma_db/</code>)</td>
+          <td>Persists across restarts — no re-ingestion needed after a reboot</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── DECISIONS ── -->
+<section id="decisions">
+  <div class="container">
+    <div class="section-label">Architecture</div>
+    <h2>Key Design Decisions — Why This Way?</h2>
+
+    <div class="decisions">
+      <div class="decision">
+        <strong>Why two databases instead of one?</strong>
+        <p>Vector search finds semantically similar text but misses factual connections ("Bell Labs invented the transistor — which led to Intel — which created Moore's Law"). A graph database follows those chains in one query. Neither alone would answer both types of questions well — together they cover each other's blind spots.</p>
+      </div>
+      <div class="decision">
+        <strong>Why 60% vector / 40% graph weighting?</strong>
+        <p>Empirically, semantic search catches more relevant chunks on open-ended questions. Graph results are more precise but narrower (they require exact entity matches). The 60/40 split rewards breadth while still giving factual relationship chains a meaningful boost.</p>
+      </div>
+      <div class="decision">
+        <strong>Why Claude Haiku for extraction and Claude Sonnet for generation?</strong>
+        <p>Extraction runs on every chunk during ingestion — potentially thousands of API calls. Haiku is fast and cheap enough for this volume. Generation happens once per query and needs more reasoning capability to synthesize evidence into a coherent answer — that's where Sonnet's quality earns its cost.</p>
+      </div>
+      <div class="decision">
+        <strong>Why local embeddings (all-MiniLM-L6-v2) instead of an API?</strong>
+        <p>Embeddings are computed for every chunk at ingest time and every query at search time. Using a cloud API would add latency, cost, and a network dependency. The local model runs entirely on your machine — faster, cheaper, and works offline.</p>
+      </div>
+      <div class="decision">
+        <strong>Why add an MCP server on top of the existing FastAPI?</strong>
+        <p>FastAPI is for programmatic access (scripts, pipelines, the web UI). MCP is for conversational access — Claude can call the knowledge base mid-sentence without you copy-pasting results. Both interfaces coexist: the same Python functions underpin both, with no duplication.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── GLOSSARY ── -->
+<section id="glossary">
+  <div class="container">
+    <div class="section-label">Reference</div>
+    <h2>Words You Might Not Know</h2>
+
+    <div class="glossary-grid">
+      <div class="gloss-card">
+        <div class="gloss-term">Vector embedding</div>
+        <div class="gloss-def">A list of numbers (e.g. 384 of them) that represents the <em>meaning</em> of a sentence. Similar sentences produce similar number lists — so you can search by meaning, not just keywords.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Graph database</div>
+        <div class="gloss-def">A database that stores <em>connections</em> between things (nodes and edges), not just rows and columns. Neo4j is the most popular one — great for "how are A and B related?" questions.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">RAG (Retrieval-Augmented Generation)</div>
+        <div class="gloss-def">A technique where you <em>fetch relevant facts first</em>, then give those facts to an AI to write the answer — so the AI can't make things up, it can only use what you gave it.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Cosine similarity</div>
+        <div class="gloss-def">A maths trick for measuring how similar two vectors are. If two vectors point in nearly the same direction, they're similar (score close to 1.0). Opposite directions = score near -1.0. Used to rank search results.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">HNSW index</div>
+        <div class="gloss-def">Hierarchical Navigable Small World — a clever data structure inside ChromaDB that makes nearest-neighbor search extremely fast, even with millions of vectors.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Cypher</div>
+        <div class="gloss-def">Neo4j's query language — like SQL but for graphs. Instead of SELECT rows, you MATCH patterns like (Alan Turing)-[:WORKED_AT]->(Bletchley Park).</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">NER (Named Entity Recognition)</div>
+        <div class="gloss-def">The job of finding proper nouns in text — "Alan Turing" (person), "Bell Labs" (organisation), "New Jersey" (location). spaCy does this here to identify what to look up in the graph.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">MCP (Model Context Protocol)</div>
+        <div class="gloss-def">A standard that lets Claude call external tools during a conversation. The tool returns data, Claude reads it and continues — like giving Claude hands to reach out and fetch information.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Chunking</div>
+        <div class="gloss-def">Cutting a long document into smaller pieces (chunks) so an AI model — which can only read a limited amount at once — can process each piece. Overlapping chunks prevent facts from being cut in half.</div>
+      </div>
+      <div class="gloss-card">
+        <div class="gloss-term">Score fusion</div>
+        <div class="gloss-def">Combining scores from two different search systems (graph + vector) into one unified ranking. Here: final score = vector score × 0.6 + graph score × 0.4.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center; padding:2rem; color:var(--muted); font-size:.8rem; border-top:1px solid var(--border);">
+  GraphRAG — Graph-Enhanced Knowledge Base &nbsp;·&nbsp; Generated by Claude Code
+</footer>
+
+</body>
+</html>
